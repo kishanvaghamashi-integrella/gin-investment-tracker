@@ -6,18 +6,6 @@ import (
 
 var Validate *validator.Validate = validator.New()
 
-func init() {
-	Validate.RegisterValidation("instrument_type", func(fl validator.FieldLevel) bool {
-		val := fl.Field().String()
-		return val == "stock" || val == "mutual_fund"
-	})
-
-	Validate.RegisterValidation("txn_type", func(fl validator.FieldLevel) bool {
-		val := fl.Field().String()
-		return val == "BUY" || val == "SELL"
-	})
-}
-
 type ValidationError struct {
 	Field   string `json:"field"`
 	Message string `json:"message"`

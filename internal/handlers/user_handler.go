@@ -18,7 +18,7 @@ type UserHandler struct {
 	service *service.UserService
 }
 
-func NewUserService(service *service.UserService) *UserHandler {
+func NewUserHandler(service *service.UserService) *UserHandler {
 	return &UserHandler{service: service}
 }
 
@@ -39,7 +39,6 @@ func (h *UserHandler) Create(c *gin.Context) {
 	var req dto.CreateUserRequest
 	if err := c.ShouldBindJSON(&req); err != nil {
 		var ve validator.ValidationErrors
-
 		if errors.As(err, &ve) {
 			slog.Warn("validation failed", "error", ve)
 			util.SendErrorResponse(c, http.StatusBadRequest, util.FormatValidationErrors(err))
@@ -76,6 +75,13 @@ func (h *UserHandler) Login(c *gin.Context) {
 
 	var req dto.LoginRequest
 	if err := c.ShouldBindJSON(&req); err != nil {
+		var ve validator.ValidationErrors
+		if errors.As(err, &ve) {
+			slog.Warn("validation failed", "error", ve)
+			util.SendErrorResponse(c, http.StatusBadRequest, util.FormatValidationErrors(err))
+			return
+		}
+
 		slog.Warn("failed to bind request body", "handler", "UserHandler.Login", "error", err)
 		util.SendErrorResponse(c, http.StatusBadRequest, err.Error())
 		return
@@ -180,9 +186,9 @@ func (h *UserHandler) Delete(c *gin.Context) {
 func (h *UserHandler) SetRoutes(r *gin.RouterGroup) {
 	users := r.Group("/users")
 	{
-		users.POST("/", h.Create)
+		users.POST("", h.Create)
 		users.POST("/login", h.Login)
 		users.Use(middleware.JWTAuth()).GET("/verify", h.Verify)
-		users.Use(middleware.JWTAuth()).DELETE("/", h.Delete)
+		users.Use(middleware.JWTAuth()).DELETE("", h.Delete)
 	}
 }

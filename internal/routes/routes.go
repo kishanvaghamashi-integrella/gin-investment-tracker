@@ -20,10 +20,10 @@ func RegisterRoutes(r *gin.Engine, db *pgxpool.Pool) {
 	userRepository := repositoryimpl.NewUserRepository(db)
 
 	// Services
-	userServices := service.NewUserService(userRepository)
+	userService := service.NewUserService(userRepository)
 
 	// Handlers
-	userHandler := handler.NewUserService(userServices)
+	userHandler := handler.NewUserHandler(userService)
 
 	// routes
 	if isDevelopmentEnvironment() {
