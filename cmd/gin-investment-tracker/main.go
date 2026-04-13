@@ -12,6 +12,16 @@ import (
 	"github.com/joho/godotenv"
 )
 
+// @title MF Stock Tracker API
+// @version 1.0
+// @description API for managing users and assets in MF Stock Tracker.
+// @BasePath /
+// @schemes http https
+// @securityDefinitions.apikey BearerAuth
+// @in header
+// @name Authorization
+// @description Type "Bearer" followed by a space and JWT token.
+
 func main() {
 	if env := godotenv.Load(); env != nil {
 		log.Fatal("Error loading .env file")
