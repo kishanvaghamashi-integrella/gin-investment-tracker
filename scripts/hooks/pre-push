@@ -1,0 +1,22 @@
+#!/usr/bin/env bash
+# pre-push hook — blocks push to main if any unit test fails.
+# Install: copy to .git/hooks/pre-push and chmod +x, or run `make install-hooks`.
+
+set -euo pipefail
+
+PROTECTED_BRANCH="main"
+
+while read -r local_ref local_sha remote_ref remote_sha; do
+  if [[ "$remote_ref" == "refs/heads/$PROTECTED_BRANCH" ]]; then
+    echo "Running unit tests before pushing to $PROTECTED_BRANCH..."
+    if ! go test -count=1 ./...; then
+      echo ""
+      echo "ERROR: Unit tests failed. Push blocked."
+      echo "Fix the failing tests and try again."
+      exit 1
+    fi
+    echo "All tests passed. Proceeding with push."
+  fi
+done
+
+exit 0

@@ -2,7 +2,7 @@ package routes
 
 import (
 	handler "gin-investment-tracker/internal/handlers"
-	repositoryimpl "gin-investment-tracker/internal/repositories_impl"
+	repository "gin-investment-tracker/internal/repositories"
 	service "gin-investment-tracker/internal/services"
 	"os"
 	"strings"
@@ -11,13 +11,11 @@ import (
 	"github.com/jackc/pgx/v5/pgxpool"
 	swaggerFiles "github.com/swaggo/files"
 	ginSwagger "github.com/swaggo/gin-swagger"
-
-	_ "gin-investment-tracker/docs"
 )
 
 func RegisterRoutes(r *gin.Engine, db *pgxpool.Pool) {
 	// Repositories
-	userRepository := repositoryimpl.NewUserRepository(db)
+	userRepository := repository.NewUserRepository(db)
 
 	// Services
 	userService := service.NewUserService(userRepository)
