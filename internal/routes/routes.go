@@ -11,8 +11,6 @@ import (
 	"github.com/jackc/pgx/v5/pgxpool"
 	swaggerFiles "github.com/swaggo/files"
 	ginSwagger "github.com/swaggo/gin-swagger"
-
-	_ "gin-investment-tracker/docs"
 )
 
 func RegisterRoutes(r *gin.Engine, db *pgxpool.Pool) {

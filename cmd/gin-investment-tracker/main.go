@@ -2,6 +2,7 @@ package main
 
 import (
 	"context"
+	_ "gin-investment-tracker/docs"
 	"gin-investment-tracker/internal/db"
 	"gin-investment-tracker/internal/routes"
 	"log"
