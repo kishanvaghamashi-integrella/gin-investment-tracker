@@ -1,10 +1,18 @@
 package util
 
 import (
+	"github.com/gin-gonic/gin/binding"
 	"github.com/go-playground/validator/v10"
 )
 
-var Validate *validator.Validate = validator.New()
+func init() {
+	if v, ok := binding.Validator.Engine().(*validator.Validate); ok {
+		v.RegisterValidation("instrument_type", func(fl validator.FieldLevel) bool {
+			val := fl.Field().String()
+			return val == "stock" || val == "mutual_fund"
+		})
+	}
+}
 
 type ValidationError struct {
 	Field   string `json:"field"`

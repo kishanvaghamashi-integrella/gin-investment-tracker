@@ -2,7 +2,7 @@
 
 ## Stack
 
-- **Language**: Go 1.23+
+- **Language**: Go 1.25.7
 - **Framework**: Gin (HTTP), pgx/v5 (PostgreSQL), golang-jwt/v5, bcrypt
 - **Testing**: `testify` (`assert`, `require`, `mock`)
 - **Docs**: swaggo/swag (Swagger)
@@ -20,8 +20,7 @@ internal/
   middlewares/                ← JWT middleware
   mocks/                      ← shared testify/mock structs
   models/                     ← DB models
-  repositories/               ← repository interfaces
-  repositories_impl/          ← pgx implementations
+  repositories/               ← repository interfaces + pgx implementations
   routes/                     ← route registration
   services/                   ← business logic + interfaces
   util/                       ← errors, jwt, bcrypt, validator, context
@@ -39,7 +38,69 @@ internal/
 
 ---
 
-## Unit Test Conventions
+## Validation Rules
+
+**DTOs use `binding:` tags** (not `validate:`) so Gin's `ShouldBindJSON` handles all validation in one step — no separate `util.Validate.Struct()` call in the handler.
+
+**Handler pattern** (mirror `user_handler.go`):
+
+```go
+var req dto.CreateFooRequest
+if err := c.ShouldBindJSON(&req); err != nil {
+    var ve validator.ValidationErrors
+    if errors.As(err, &ve) {
+        util.SendErrorResponse(c, http.StatusBadRequest, util.FormatValidationErrors(err))
+        return
+    }
+    util.SendErrorResponse(c, http.StatusBadRequest, err.Error())
+    return
+}
+```
+
+**Custom validators** are registered once with Gin's binding engine in `internal/util/validator.go`:
+
+```go
+func init() {
+    if v, ok := binding.Validator.Engine().(*validator.Validate); ok {
+        v.RegisterValidation("my_tag", func(fl validator.FieldLevel) bool { ... })
+    }
+}
+```
+
+Add a matching case to `getErrorMessage()` in `validator.go` for the human-readable error message.
+
+Currently registered custom validators:
+
+| Tag               | Valid values               |
+| ----------------- | -------------------------- |
+| `instrument_type` | `"stock"`, `"mutual_fund"` |
+
+## Handler Helpers
+
+Shared helpers live in `internal/handlers/helper.go`. **Always use these instead of inline parsing.**
+
+| Helper                  | Signature                                          | Usage                                                                                |
+| ----------------------- | -------------------------------------------------- | ------------------------------------------------------------------------------------ |
+| `parseIntegerID`        | `(c *gin.Context, param string) (int64, error)`   | Parse a path parameter as int64                                                      |
+| `parsePaginationParams` | `(c *gin.Context) (limit, offset int, err error)` | Parse `limit`/`offset` query params with defaults (50/0) and a silent max-cap of 200 |
+
+**Usage pattern in a handler:**
+
+```go
+id, err := parseIntegerID(c, "entityId")
+if err != nil {
+    util.SendErrorResponse(c, http.StatusBadRequest, "invalid entity id")
+    return
+}
+
+limit, offset, err := parsePaginationParams(c)
+if err != nil {
+    util.SendErrorResponse(c, http.StatusBadRequest, err.Error())
+    return
+}
+```
+
+> `parsePaginationParams` caps `limit` at 200 silently — it does **not** error when limit > 200.
 
 ### File placement
 

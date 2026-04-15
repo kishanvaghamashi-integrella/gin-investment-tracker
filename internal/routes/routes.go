@@ -2,6 +2,7 @@ package routes
 
 import (
 	handler "gin-investment-tracker/internal/handlers"
+	middleware "gin-investment-tracker/internal/middlewares"
 	repository "gin-investment-tracker/internal/repositories"
 	service "gin-investment-tracker/internal/services"
 	"os"
@@ -16,12 +17,15 @@ import (
 func RegisterRoutes(r *gin.Engine, db *pgxpool.Pool) {
 	// Repositories
 	userRepository := repository.NewUserRepository(db)
+	assetRepository := repository.NewAssetRepository(db)
 
 	// Services
 	userService := service.NewUserService(userRepository)
+	assetService := service.NewAssetService(assetRepository)
 
 	// Handlers
 	userHandler := handler.NewUserHandler(userService)
+	assetHandler := handler.NewAssetHandler(assetService)
 
 	// routes
 	if isDevelopmentEnvironment() {
@@ -30,6 +34,12 @@ func RegisterRoutes(r *gin.Engine, db *pgxpool.Pool) {
 
 	unprotectedRouter := r.Group("/api")
 	userHandler.SetRoutes(unprotectedRouter)
+
+	protectedRouter := r.Group("/api")
+	protectedRouter.Use(middleware.JWTAuth())
+	{
+		assetHandler.SetRoutes(protectedRouter)
+	}
 }
 
 func isDevelopmentEnvironment() bool {
