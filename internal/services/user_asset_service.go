@@ -36,7 +36,7 @@ func (s *UserAssetService) Create(ctx context.Context, userID int64, req *dto.Cr
 		return nil, util.NewNotFoundError(fmt.Sprintf("asset with id %d not found", req.AssetID))
 	}
 
-	exists, err = s.repo.IsUserAssetExits(ctx, userID, req.AssetID)
+	exists, err = s.repo.IsUserAssetExists(ctx, userID, req.AssetID)
 	if err != nil {
 		return nil, err
 	}

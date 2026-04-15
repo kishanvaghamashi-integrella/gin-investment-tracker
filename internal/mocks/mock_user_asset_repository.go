@@ -38,7 +38,7 @@ func (m *MockUserAssetRepository) Delete(ctx context.Context, id, userID int64) 
 	return args.Error(0)
 }
 
-func (m *MockUserAssetRepository) IsUserAssetExits(ctx context.Context, userID int64, assetID int64) (bool, error) {
+func (m *MockUserAssetRepository) IsUserAssetExists(ctx context.Context, userID int64, assetID int64) (bool, error) {
 	args := m.Called(ctx, userID, assetID)
 	return args.Bool(0), args.Error(1)
 }

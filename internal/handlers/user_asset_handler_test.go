@@ -19,6 +19,10 @@ import (
 	"github.com/stretchr/testify/require"
 )
 
+func init() {
+	gin.SetMode(gin.TestMode)
+}
+
 func setupUserAssetRouter(svc *mocks.MockUserAssetService) *gin.Engine {
 	r := gin.New()
 	h := handler.NewUserAssetHandler(svc)

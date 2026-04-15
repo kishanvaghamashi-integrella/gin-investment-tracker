@@ -30,7 +30,7 @@ func TestUserAssetService_Create_Success(t *testing.T) {
 
 	userRepo.On("ExistsByID", context.Background(), int64(1)).Return(true, nil)
 	assetRepo.On("ExistsByID", context.Background(), int64(5)).Return(true, nil)
-	userAssetRepo.On("IsUserAssetExits", context.Background(), int64(1), int64(5)).Return(false, nil)
+	userAssetRepo.On("IsUserAssetExists", context.Background(), int64(1), int64(5)).Return(false, nil)
 	userAssetRepo.On("Create", context.Background(), mock.AnythingOfType("*model.UserAsset")).Return(nil)
 
 	result, err := svc.Create(context.Background(), 1, req)
@@ -100,7 +100,7 @@ func TestUserAssetService_Create_AlreadyExists(t *testing.T) {
 
 	userRepo.On("ExistsByID", context.Background(), int64(1)).Return(true, nil)
 	assetRepo.On("ExistsByID", context.Background(), int64(5)).Return(true, nil)
-	userAssetRepo.On("IsUserAssetExits", context.Background(), int64(1), int64(5)).Return(true, nil)
+	userAssetRepo.On("IsUserAssetExists", context.Background(), int64(1), int64(5)).Return(true, nil)
 
 	result, err := svc.Create(context.Background(), 1, req)
 
@@ -123,7 +123,7 @@ func TestUserAssetService_Create_RepoError(t *testing.T) {
 
 	userRepo.On("ExistsByID", context.Background(), int64(1)).Return(true, nil)
 	assetRepo.On("ExistsByID", context.Background(), int64(5)).Return(true, nil)
-	userAssetRepo.On("IsUserAssetExits", context.Background(), int64(1), int64(5)).Return(false, nil)
+	userAssetRepo.On("IsUserAssetExists", context.Background(), int64(1), int64(5)).Return(false, nil)
 	userAssetRepo.On("Create", context.Background(), mock.AnythingOfType("*model.UserAsset")).
 		Return(util.NewInternalError("db failure"))
 

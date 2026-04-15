@@ -35,7 +35,7 @@ func (h *UserAssetHandler) SetRoutes(rg *gin.RouterGroup) {
 // @Accept json
 // @Produce json
 // @Param payload body dto.CreateUserAssetRequest true "Asset assignment payload"
-// @Success 201 {object} model.UserAsset
+// @Success 201 {object} map[string]string
 // @Failure 400 {object} util.ErrorBody
 // @Failure 404 {object} util.ErrorBody
 // @Failure 500 {object} util.ErrorBody
@@ -84,7 +84,7 @@ func (h *UserAssetHandler) Create(c *gin.Context) {
 // @Produce json
 // @Param limit query int false "Number of records to return (default: 50, max: 200)"
 // @Param offset query int false "Number of records to skip (default: 0)"
-// @Success 200 {array} []model.UserAsset
+// @Success 200 {array} model.UserAsset
 // @Failure 400 {object} util.ErrorBody
 // @Failure 404 {object} util.ErrorBody
 // @Failure 500 {object} util.ErrorBody

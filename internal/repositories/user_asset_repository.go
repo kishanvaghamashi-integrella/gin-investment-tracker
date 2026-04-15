@@ -30,7 +30,7 @@ func (r *UserAssetRepository) Create(ctx context.Context, userAsset *model.UserA
 		Scan(&userAsset.ID, &userAsset.CreatedAt)
 	if err != nil {
 		slog.Error("failed to create user asset", "error", err.Error())
-		return util.NewInternalError(fmt.Sprintf("failed to create user asset - %s", err.Error()))
+		return util.NewInternalError("failed to create user asset")
 	}
 
 	return nil
@@ -62,6 +62,11 @@ func (r *UserAssetRepository) GetByUserID(ctx context.Context, userID int64, lim
 		userAssets = append(userAssets, ua)
 	}
 
+	if err := rows.Err(); err != nil {
+		slog.Error("failed during user asset row iteration", "error", err.Error())
+		return nil, util.NewInternalError("failed to list user assets")
+	}
+
 	return userAssets, nil
 }
 
@@ -81,7 +86,7 @@ func (r *UserAssetRepository) Delete(ctx context.Context, id, userID int64) erro
 	return nil
 }
 
-func (r *UserAssetRepository) IsUserAssetExits(ctx context.Context, userID int64, assetID int64) (bool, error) {
+func (r *UserAssetRepository) IsUserAssetExists(ctx context.Context, userID int64, assetID int64) (bool, error) {
 	query := `SELECT EXISTS(SELECT 1 FROM user_assets WHERE user_id = $1 AND asset_id = $2)`
 
 	var exists bool
