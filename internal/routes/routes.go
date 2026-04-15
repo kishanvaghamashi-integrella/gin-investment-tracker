@@ -18,14 +18,17 @@ func RegisterRoutes(r *gin.Engine, db *pgxpool.Pool) {
 	// Repositories
 	userRepository := repository.NewUserRepository(db)
 	assetRepository := repository.NewAssetRepository(db)
+	userAssetRepository := repository.NewUserAssetRepository(db)
 
 	// Services
 	userService := service.NewUserService(userRepository)
 	assetService := service.NewAssetService(assetRepository)
+	userAssetService := service.NewUserAssetService(userAssetRepository, userRepository, assetRepository)
 
 	// Handlers
 	userHandler := handler.NewUserHandler(userService)
 	assetHandler := handler.NewAssetHandler(assetService)
+	userAssetHandler := handler.NewUserAssetHandler(userAssetService)
 
 	// routes
 	if isDevelopmentEnvironment() {
@@ -39,6 +42,7 @@ func RegisterRoutes(r *gin.Engine, db *pgxpool.Pool) {
 	protectedRouter.Use(middleware.JWTAuth())
 	{
 		assetHandler.SetRoutes(protectedRouter)
+		userAssetHandler.SetRoutes(protectedRouter)
 	}
 }
 
