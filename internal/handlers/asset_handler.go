@@ -28,7 +28,7 @@ func NewAssetHandler(svc service.AssetServiceInterface) *AssetHandler {
 // @Accept json
 // @Produce json
 // @Param payload body dto.CreateAssetRequest true "Create asset payload"
-// @Success 201 {object} model.Asset
+// @Success 201 {object} map[string]string
 // @Failure 400 {object} util.ErrorBody
 // @Failure 500 {object} util.ErrorBody
 // @Router /api/assets/ [post]
@@ -101,7 +101,7 @@ func (h *AssetHandler) GetByID(c *gin.Context) {
 // @Produce json
 // @Param limit query int false "Number of records to return (default: 50, max: 200)"
 // @Param offset query int false "Number of records to skip (default: 0)"
-// @Success 200 {array} []model.Asset
+// @Success 200 {array} model.Asset
 // @Failure 400 {object} util.ErrorBody
 // @Failure 500 {object} util.ErrorBody
 // @Router /api/assets/ [get]
@@ -210,5 +210,4 @@ func (h *AssetHandler) SetRoutes(r *gin.RouterGroup) {
 	assets.GET("/:assetId", h.GetByID)
 	assets.PUT("/:assetId", h.Update)
 	assets.DELETE("/:assetId", h.Delete)
-
 }

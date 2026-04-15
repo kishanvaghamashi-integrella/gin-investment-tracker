@@ -12,7 +12,6 @@ CREATE TABLE assets (
     external_platform_id TEXT UNIQUE,
     created_at TIMESTAMPTZ DEFAULT now()
 );
-CREATE INDEX idx_assets_isin ON assets(isin);
 -- +goose StatementBegin
 SELECT 'up SQL query';
 -- +goose StatementEnd

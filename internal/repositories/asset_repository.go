@@ -41,7 +41,7 @@ func (r *AssetRepository) Create(ctx context.Context, asset *model.Asset) error 
 
 	if err != nil {
 		slog.Error("failed to create asset", "error", err.Error())
-		return util.NewInternalError(fmt.Sprintf("failed to create asset - %s", err.Error()))
+		return util.NewInternalError("failed to create asset")
 	}
 
 	return nil
@@ -111,6 +111,11 @@ func (r *AssetRepository) GetAll(ctx context.Context, limit, offset int) ([]mode
 			return nil, util.NewInternalError("failed to list assets")
 		}
 		assets = append(assets, asset)
+	}
+
+	if err := rows.Err(); err != nil {
+		slog.Error("failed while iterating asset rows", "error", err.Error())
+		return nil, util.NewInternalError("failed to list assets")
 	}
 
 	return assets, nil

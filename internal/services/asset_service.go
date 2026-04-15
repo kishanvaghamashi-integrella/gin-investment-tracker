@@ -17,15 +17,16 @@ func NewAssetService(repo repository.AssetRepositoryInterface) *AssetService {
 
 func (s *AssetService) Create(ctx context.Context, req *dto.CreateAssetRequest) (*model.Asset, error) {
 	asset := &model.Asset{
-		Symbol:             req.Symbol,
-		Name:               req.Name,
-		InstrumentType:     req.InstrumentType,
-		ISIN:               req.ISIN,
-		Exchange:           req.Exchange,
-		Currency:           req.Currency,
-		ExternalPlatformID: req.ExternalPlatformID,
+		Symbol:         req.Symbol,
+		Name:           req.Name,
+		InstrumentType: req.InstrumentType,
+		ISIN:           req.ISIN,
+		Exchange:       req.Exchange,
+		Currency:       req.Currency,
 	}
-
+	if req.ExternalPlatformID != nil {
+		asset.ExternalPlatformID = req.ExternalPlatformID
+	}
 	if asset.Currency == "" {
 		asset.Currency = "INR"
 	}
@@ -70,7 +71,7 @@ func (s *AssetService) Update(ctx context.Context, id int64, req *dto.UpdateAsse
 		asset.Currency = *req.Currency
 	}
 	if req.ExternalPlatformID != nil {
-		asset.ExternalPlatformID = *req.ExternalPlatformID
+		asset.ExternalPlatformID = req.ExternalPlatformID
 	}
 
 	return s.repo.Update(ctx, asset)

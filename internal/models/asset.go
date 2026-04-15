@@ -10,6 +10,6 @@ type Asset struct {
 	ISIN               string    `json:"isin" db:"isin"`
 	Exchange           string    `json:"exchange" db:"exchange"`
 	Currency           string    `json:"currency" db:"currency"`
-	ExternalPlatformID string    `json:"external_platform_id" db:"external_platform_id"`
+	ExternalPlatformID *string   `json:"external_platform_id" db:"external_platform_id"`
 	CreatedAt          time.Time `json:"created_at" db:"created_at"`
 }
