@@ -17,16 +17,42 @@ import (
 	"time"
 )
 
+// PriceFetcher abstracts external price lookups so the service can be tested
+// deterministically without hitting live APIs.
+type PriceFetcher interface {
+	FetchPrice(instrumentType, externalPlatformID string) (float64, error)
+}
+
+// RealPriceFetcher calls the live mfapi.in / Yahoo Finance endpoints.
+type RealPriceFetcher struct{}
+
+func (f *RealPriceFetcher) FetchPrice(instrumentType, externalPlatformID string) (float64, error) {
+	if instrumentType == "stock" {
+		return fetchLatestStockPrice(externalPlatformID)
+	}
+	return fetchLatestMfPrice(externalPlatformID)
+}
+
 type HoldingService struct {
-	repo     repository.HoldingRepositoryInterface
-	userRepo repository.UserRepositoryInterface
+	repo         repository.HoldingRepositoryInterface
+	userRepo     repository.UserRepositoryInterface
+	priceFetcher PriceFetcher
 }
 
 func NewHoldingService(
 	repo repository.HoldingRepositoryInterface,
 	userRepo repository.UserRepositoryInterface,
 ) *HoldingService {
-	return &HoldingService{repo: repo, userRepo: userRepo}
+	return &HoldingService{repo: repo, userRepo: userRepo, priceFetcher: &RealPriceFetcher{}}
+}
+
+// NewHoldingServiceWithFetcher is intended for tests that need a stubbed price fetcher.
+func NewHoldingServiceWithFetcher(
+	repo repository.HoldingRepositoryInterface,
+	userRepo repository.UserRepositoryInterface,
+	fetcher PriceFetcher,
+) *HoldingService {
+	return &HoldingService{repo: repo, userRepo: userRepo, priceFetcher: fetcher}
 }
 
 func (s *HoldingService) GetAllByUserID(ctx context.Context, userID int64, limit, offset int) ([]dto.HoldingResponseDto, error) {
@@ -39,8 +65,8 @@ func (s *HoldingService) GetAllByUserID(ctx context.Context, userID int64, limit
 		return nil, err
 	}
 
-	fetchLatestPriceAndCalculateHolding(&holdings)
-	return holdings, err
+	fetchLatestPriceAndCalculateHolding(&holdings, s.priceFetcher)
+	return holdings, nil
 }
 
 func (s *HoldingService) ensureUserExists(ctx context.Context, userID int64) error {
@@ -151,24 +177,17 @@ func fetchLatestStockPrice(schemeCode string) (float64, error) {
 	return price, nil
 }
 
-func fetchLatestPriceAndCalculateHolding(holdings *[]dto.HoldingResponseDto) {
+func fetchLatestPriceAndCalculateHolding(holdings *[]dto.HoldingResponseDto, fetcher PriceFetcher) {
 	resultCh := make(chan priceResult, len(*holdings))
 	var wg sync.WaitGroup
 
 	for i, holding := range *holdings {
 		wg.Add(1)
-		go func(i int, schemeCode string) {
+		go func(i int, schemeCode, instrumentType string) {
 			defer wg.Done()
-
-			var price float64
-			var err error
-			if holding.AssetInstrumentType == "stock" {
-				price, err = fetchLatestStockPrice(schemeCode)
-			} else {
-				price, err = fetchLatestMfPrice(schemeCode)
-			}
+			price, err := fetcher.FetchPrice(instrumentType, schemeCode)
 			resultCh <- priceResult{index: i, price: price, err: err}
-		}(i, holding.AssetExternalPlatformID)
+		}(i, holding.AssetExternalPlatformID, holding.AssetInstrumentType)
 	}
 
 	go func() {
@@ -178,7 +197,12 @@ func fetchLatestPriceAndCalculateHolding(holdings *[]dto.HoldingResponseDto) {
 
 	for res := range resultCh {
 		if res.err != nil {
-			slog.Error("failed to fetch current data of mutual fund", "assetName", (*holdings)[res.index].AssetName, "error", res.err)
+			slog.Error(
+				"failed to fetch current asset data",
+				"assetName", (*holdings)[res.index].AssetName,
+				"instrumentType", (*holdings)[res.index].AssetInstrumentType,
+				"error", res.err,
+			)
 			res.price = (*holdings)[res.index].AveragePrice
 			calculateCurrentProfit(res, holdings)
 			continue
@@ -192,5 +216,10 @@ func calculateCurrentProfit(priceData priceResult, holdings *[]dto.HoldingRespon
 	holding := &(*holdings)[priceData.index]
 	(*holding).CurrentPrice = priceData.price
 	(*holding).CurrentCapital = priceData.price * (holding.Quantity)
-	(*holding).ReturnPercentage = ((holding.CurrentCapital - holding.InvestedCapital) / holding.InvestedCapital) * 100
+	if holding.InvestedCapital == 0 {
+		(*holding).ReturnPercentage = 0
+	} else {
+
+		(*holding).ReturnPercentage = ((holding.CurrentCapital - holding.InvestedCapital) / holding.InvestedCapital) * 100
+	}
 }
