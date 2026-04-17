@@ -20,18 +20,21 @@ func RegisterRoutes(r *gin.Engine, db *pgxpool.Pool) {
 	assetRepository := repository.NewAssetRepository(db)
 	userAssetRepository := repository.NewUserAssetRepository(db)
 	transactionRepository := repository.NewTransactionRepository(db)
+	holdingRepository := repository.NewHoldingRepository(db)
 
 	// Services
 	userService := service.NewUserService(userRepository)
 	assetService := service.NewAssetService(assetRepository)
 	userAssetService := service.NewUserAssetService(userAssetRepository, userRepository, assetRepository)
 	transactionService := service.NewTransactionService(transactionRepository, userAssetRepository, userRepository, assetRepository)
+	holdingService := service.NewHoldingService(holdingRepository, userRepository)
 
 	// Handlers
 	userHandler := handler.NewUserHandler(userService)
 	assetHandler := handler.NewAssetHandler(assetService)
 	userAssetHandler := handler.NewUserAssetHandler(userAssetService)
 	transactionHandler := handler.NewTransactionHandler(transactionService)
+	holdingHandler := handler.NewHoldingHandler(holdingService)
 
 	// routes
 	if isDevelopmentEnvironment() {
@@ -47,6 +50,7 @@ func RegisterRoutes(r *gin.Engine, db *pgxpool.Pool) {
 		assetHandler.SetRoutes(protectedRouter)
 		userAssetHandler.SetRoutes(protectedRouter)
 		transactionHandler.SetRoutes(protectedRouter)
+		holdingHandler.SetRoutes(protectedRouter)
 	}
 }
 
