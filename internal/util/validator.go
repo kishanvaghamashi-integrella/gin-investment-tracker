@@ -11,6 +11,10 @@ func init() {
 			val := fl.Field().String()
 			return val == "stock" || val == "mutual_fund"
 		})
+		v.RegisterValidation("txn_type", func(fl validator.FieldLevel) bool {
+			val := fl.Field().String()
+			return val == "BUY" || val == "SELL"
+		})
 	}
 }
 
