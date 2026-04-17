@@ -583,6 +583,40 @@ func TestTransactionHandler_Update_NoAuthHeader(t *testing.T) {
 	svc.AssertNotCalled(t, "Update")
 }
 
+func TestTransactionHandler_Update_NonBearerFormat(t *testing.T) {
+	t.Setenv("JWT_SECRET", "test-secret-key")
+	svc := new(mocks.MockTransactionService)
+
+	r := setupTransactionRouter(svc)
+	body := txnJSONBody(t, map[string]any{"quantity": 5.0})
+	req := httptest.NewRequest(http.MethodPut, "/api/transactions/1", body)
+	req.Header.Set("Content-Type", "application/json")
+	req.Header.Set("Authorization", "Token sometoken")
+	w := httptest.NewRecorder()
+
+	r.ServeHTTP(w, req)
+
+	assert.Equal(t, http.StatusUnauthorized, w.Code)
+	svc.AssertNotCalled(t, "Update")
+}
+
+func TestTransactionHandler_Update_InvalidToken(t *testing.T) {
+	t.Setenv("JWT_SECRET", "test-secret-key")
+	svc := new(mocks.MockTransactionService)
+
+	r := setupTransactionRouter(svc)
+	body := txnJSONBody(t, map[string]any{"quantity": 5.0})
+	req := httptest.NewRequest(http.MethodPut, "/api/transactions/1", body)
+	req.Header.Set("Content-Type", "application/json")
+	req.Header.Set("Authorization", "Bearer not.a.valid.token")
+	w := httptest.NewRecorder()
+
+	r.ServeHTTP(w, req)
+
+	assert.Equal(t, http.StatusUnauthorized, w.Code)
+	svc.AssertNotCalled(t, "Update")
+}
+
 // ─────────────────────────────────────────────
 // DELETE /api/transactions/:txnId — Delete
 // ─────────────────────────────────────────────
