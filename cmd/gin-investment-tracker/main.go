@@ -4,7 +4,7 @@ import (
 	"context"
 	_ "gin-investment-tracker/docs"
 	"gin-investment-tracker/internal/db"
-	"gin-investment-tracker/internal/routes"
+	"gin-investment-tracker/internal/server"
 	"log"
 	"os"
 	"time"
@@ -39,6 +39,6 @@ func main() {
 	}
 
 	r := gin.Default()
-	routes.RegisterRoutes(r, dbPool)
+	server.RegisterRoutes(r, dbPool)
 	r.Run(":8080")
 }

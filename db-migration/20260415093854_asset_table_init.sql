@@ -3,6 +3,7 @@ CREATE TABLE assets (
     id BIGSERIAL PRIMARY KEY,
     symbol TEXT NOT NULL,
     name TEXT NOT NULL,
+    amc TEXT,
     instrument_type TEXT NOT NULL CHECK (
         instrument_type IN ('stock', 'mutual_fund')
     ),

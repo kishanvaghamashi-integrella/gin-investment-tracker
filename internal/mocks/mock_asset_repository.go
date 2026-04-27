@@ -24,6 +24,14 @@ func (m *MockAssetRepository) GetByID(ctx context.Context, id int64) (*model.Ass
 	return args.Get(0).(*model.Asset), args.Error(1)
 }
 
+func (m *MockAssetRepository) GetByISIN(ctx context.Context, isin string) (*model.Asset, error) {
+	args := m.Called(ctx, isin)
+	if args.Get(0) == nil {
+		return nil, args.Error(1)
+	}
+	return args.Get(0).(*model.Asset), args.Error(1)
+}
+
 func (m *MockAssetRepository) GetAll(ctx context.Context, limit, offset int) ([]model.Asset, error) {
 	args := m.Called(ctx, limit, offset)
 	if args.Get(0) == nil {
