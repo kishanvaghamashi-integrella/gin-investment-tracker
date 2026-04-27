@@ -169,6 +169,37 @@ func (r *AssetRepository) Delete(ctx context.Context, id int64) error {
 	return nil
 }
 
+func (r *AssetRepository) GetByISIN(ctx context.Context, isin string) (*model.Asset, error) {
+	query := `
+		SELECT id, symbol, name, instrument_type, isin, exchange, currency, external_platform_id, created_at
+		FROM assets
+		WHERE isin = $1
+	`
+
+	var asset model.Asset
+	err := r.db.QueryRow(ctx, query, isin).Scan(
+		&asset.ID,
+		&asset.Symbol,
+		&asset.Name,
+		&asset.InstrumentType,
+		&asset.ISIN,
+		&asset.Exchange,
+		&asset.Currency,
+		&asset.ExternalPlatformID,
+		&asset.CreatedAt,
+	)
+
+	if err != nil {
+		if errors.Is(err, pgx.ErrNoRows) {
+			return nil, util.NewNotFoundError(fmt.Sprintf("asset with isin %s not found", isin))
+		}
+		slog.Error("failed to get asset by isin", "error", err.Error())
+		return nil, util.NewInternalError("failed to get asset")
+	}
+
+	return &asset, nil
+}
+
 func (r *AssetRepository) ExistsByID(ctx context.Context, id int64) (bool, error) {
 	query := `SELECT EXISTS(SELECT 1 FROM assets WHERE id = $1)`
 

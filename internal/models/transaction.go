@@ -5,6 +5,7 @@ import "time"
 type Transaction struct {
 	ID          int64     `json:"id" db:"id"`
 	UserAssetID int64     `json:"user_asset_id" db:"user_asset_id"`
+	Description *string   `json:"description"`
 	TxnType     string    `json:"txn_type" db:"txn_type"`
 	Quantity    float64   `json:"quantity" db:"quantity"`
 	Price       float64   `json:"price" db:"price"`

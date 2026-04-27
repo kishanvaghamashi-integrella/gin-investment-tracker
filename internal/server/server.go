@@ -1,6 +1,7 @@
-package routes
+package server
 
 import (
+	casparser "gin-investment-tracker/internal/cas-parser"
 	handler "gin-investment-tracker/internal/handlers"
 	middleware "gin-investment-tracker/internal/middlewares"
 	repository "gin-investment-tracker/internal/repositories"
@@ -15,12 +16,16 @@ import (
 )
 
 func RegisterRoutes(r *gin.Engine, db *pgxpool.Pool) {
+	// dependecy
+	casParser := casparser.NewCasParserPythonApi()
+
 	// Repositories
 	userRepository := repository.NewUserRepository(db)
 	assetRepository := repository.NewAssetRepository(db)
 	userAssetRepository := repository.NewUserAssetRepository(db)
 	transactionRepository := repository.NewTransactionRepository(db)
 	holdingRepository := repository.NewHoldingRepository(db)
+	statementRepository := repository.NewStatementRepository(db)
 
 	// Services
 	userService := service.NewUserService(userRepository)
@@ -28,6 +33,7 @@ func RegisterRoutes(r *gin.Engine, db *pgxpool.Pool) {
 	userAssetService := service.NewUserAssetService(userAssetRepository, userRepository, assetRepository)
 	transactionService := service.NewTransactionService(transactionRepository, userAssetRepository, userRepository, assetRepository)
 	holdingService := service.NewHoldingService(holdingRepository, userRepository)
+	casStatementService := service.NewCasStatementService(casParser, transactionRepository, holdingRepository, userAssetRepository, statementRepository)
 
 	// Handlers
 	userHandler := handler.NewUserHandler(userService)
@@ -35,6 +41,7 @@ func RegisterRoutes(r *gin.Engine, db *pgxpool.Pool) {
 	userAssetHandler := handler.NewUserAssetHandler(userAssetService)
 	transactionHandler := handler.NewTransactionHandler(transactionService)
 	holdingHandler := handler.NewHoldingHandler(holdingService)
+	casStatementHandler := handler.NewCasStatementHandler(casStatementService)
 
 	// routes
 	if isDevelopmentEnvironment() {
@@ -51,6 +58,7 @@ func RegisterRoutes(r *gin.Engine, db *pgxpool.Pool) {
 		userAssetHandler.SetRoutes(protectedRouter)
 		transactionHandler.SetRoutes(protectedRouter)
 		holdingHandler.SetRoutes(protectedRouter)
+		casStatementHandler.SetRoutes(protectedRouter)
 	}
 }
 

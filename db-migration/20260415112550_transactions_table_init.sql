@@ -2,6 +2,7 @@
 CREATE TABLE transactions (
     id BIGSERIAL PRIMARY KEY,
     user_asset_id BIGINT NOT NULL REFERENCES user_assets(id) ON DELETE CASCADE,
+    description TEXT,
     txn_type TEXT NOT NULL CHECK (txn_type IN ('BUY', 'SELL')),
     quantity NUMERIC NOT NULL,
     price NUMERIC NOT NULL,
