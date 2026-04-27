@@ -37,7 +37,7 @@ func (s *StatementService) ProcessCasFile(ctx context.Context, file *multipart.F
 	go func() {
 		casStatement, err := s.parser.ProcessCasFile(bgCtx, file, filePassword, userID)
 		if err != nil {
-			slog.Error("Failed to parse the file")
+			slog.Error("Failed to parse the file", "error", err.Error())
 			return
 		}
 		slog.Info("CAS statement converted to JSON successfully.")

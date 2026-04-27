@@ -7,7 +7,7 @@ type Asset struct {
 	Symbol             string    `json:"symbol" db:"symbol"`
 	Name               string    `json:"name" db:"name"`
 	InstrumentType     string    `json:"instrument_type" db:"instrument_type"`
-	AMC                *string   `json:"amc" db:"instrument_type"`
+	AMC                *string   `json:"amc" db:"amc"`
 	ISIN               string    `json:"isin" db:"isin"`
 	Exchange           string    `json:"exchange" db:"exchange"`
 	Currency           string    `json:"currency" db:"currency"`

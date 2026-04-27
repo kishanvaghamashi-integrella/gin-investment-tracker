@@ -171,7 +171,7 @@ func (r *AssetRepository) Delete(ctx context.Context, id int64) error {
 
 func (r *AssetRepository) GetByISIN(ctx context.Context, isin string) (*model.Asset, error) {
 	query := `
-		SELECT id, symbol, name, instrument_type, isin, exchange, currency, external_platform_id, created_at
+		SELECT id, symbol, name, amc, instrument_type, isin, exchange, currency, external_platform_id, created_at
 		FROM assets
 		WHERE isin = $1
 	`
@@ -181,6 +181,7 @@ func (r *AssetRepository) GetByISIN(ctx context.Context, isin string) (*model.As
 		&asset.ID,
 		&asset.Symbol,
 		&asset.Name,
+		&asset.AMC,
 		&asset.InstrumentType,
 		&asset.ISIN,
 		&asset.Exchange,
