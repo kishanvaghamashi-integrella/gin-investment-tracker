@@ -6,7 +6,7 @@ type MockPriceFetcher struct {
 	mock.Mock
 }
 
-func (m *MockPriceFetcher) FetchPrice(instrumentType, externalPlatformID string) (float64, error) {
+func (m *MockPriceFetcher) FetchPrice(instrumentType, externalPlatformID string) (float64, float64, error) {
 	args := m.Called(instrumentType, externalPlatformID)
-	return args.Get(0).(float64), args.Error(1)
+	return args.Get(0).(float64), args.Get(0).(float64), args.Error(1)
 }

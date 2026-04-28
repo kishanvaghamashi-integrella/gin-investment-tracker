@@ -136,10 +136,10 @@ func findOrCreateAsset(ctx context.Context, tx pgx.Tx, scheme casparsermodel.Sch
 	}
 
 	err = tx.QueryRow(ctx,
-		`INSERT INTO assets (symbol, name, instrument_type, isin, amc, exchange, currency)
-		 VALUES ($1, $2, $3, $4, $5, $6, $7)
+		`INSERT INTO assets (symbol, name, instrument_type, isin, amc, exchange, currency, external_platform_id)
+		 VALUES ($1, $2, $3, $4, $5, $6, $7, $8)
 		 RETURNING id`,
-		scheme.ISIN, scheme.Scheme, "mutual_fund", scheme.ISIN, amcPtr, "MF", "INR",
+		scheme.ISIN, scheme.Scheme, "mutual_fund", scheme.ISIN, amcPtr, "MF", "INR", scheme.AMFI,
 	).Scan(&assetID)
 	if err != nil {
 		slog.Error("failed to create asset from CAS data", "error", err.Error())
