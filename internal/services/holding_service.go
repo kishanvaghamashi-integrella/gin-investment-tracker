@@ -20,17 +20,17 @@ import (
 // PriceFetcher abstracts external price lookups so the service can be tested
 // deterministically without hitting live APIs.
 type PriceFetcher interface {
-	FetchPrice(instrumentType, externalPlatformID string) (float64, error)
+	FetchPrice(instrumentType, externalPlatformID string) (float64, float64, error)
 }
 
 // RealPriceFetcher calls the live mfapi.in / Yahoo Finance endpoints.
 type RealPriceFetcher struct{}
 
-func (f *RealPriceFetcher) FetchPrice(instrumentType, externalPlatformID string) (float64, error) {
+func (f *RealPriceFetcher) FetchPrice(instrumentType, externalPlatformID string) (float64, float64, error) {
 	if instrumentType == "stock" {
-		return fetchLatestStockPrice(externalPlatformID)
+		return FetchLatestStockPrice(externalPlatformID)
 	}
-	return fetchLatestMfPrice(externalPlatformID)
+	return FetchLatestMfPrice(externalPlatformID)
 }
 
 type HoldingService struct {
@@ -86,51 +86,60 @@ type priceResult struct {
 	err   error
 }
 
-func fetchLatestMfPrice(schemeCodeStr string) (float64, error) {
+func FetchLatestMfPrice(schemeCodeStr string) (float64, float64, error) {
 	schemeCode, err := strconv.ParseInt(schemeCodeStr, 10, 64)
 	if err != nil {
-		return 0, fmt.Errorf("failed to convert scheme code from string to integer")
+		return 0, 0, fmt.Errorf("failed to convert scheme code from string to integer")
 	}
 
-	url := fmt.Sprintf("https://api.mfapi.in/mf/%d/latest", schemeCode)
+	currDate := time.Now()
+	endDateStr := currDate.Format("2001-12-02")
+	startDate := currDate.AddDate(0, 0, -7)
+	startDateStr := startDate.Format("2001-12-02")
+
+	url := fmt.Sprintf("https://api.mfapi.in/mf/%d?startDate=%s&endDate=%s", schemeCode, startDateStr, endDateStr)
 
 	resp, err := http.Get(url)
 	if err != nil {
-		return 0, fmt.Errorf("http request failed for scheme %d: %w", schemeCode, err)
+		return 0, 0, fmt.Errorf("http request failed for scheme %d: %w", schemeCode, err)
 	}
 	defer resp.Body.Close()
 
 	if resp.StatusCode != http.StatusOK {
-		return 0, fmt.Errorf("unexpected status %d for scheme %d", resp.StatusCode, schemeCode)
+		return 0, 0, fmt.Errorf("unexpected status %d for scheme %d", resp.StatusCode, schemeCode)
 	}
 
 	var apiResp model.MfNavApiResponse
 	if err := json.NewDecoder(resp.Body).Decode(&apiResp); err != nil {
-		return 0, fmt.Errorf("failed to decode response for scheme %d: %w", schemeCode, err)
+		return 0, 0, fmt.Errorf("failed to decode response for scheme %d: %w", schemeCode, err)
 	}
 
 	if apiResp.Status != "SUCCESS" {
-		return 0, fmt.Errorf("api returned non-success status for scheme %d", schemeCode)
+		return 0, 0, fmt.Errorf("api returned non-success status for scheme %d", schemeCode)
 	}
 
 	if len(apiResp.Data) == 0 {
-		return 0, fmt.Errorf("no NAV data returned for scheme %d", schemeCode)
+		return 0, 0, fmt.Errorf("no NAV data returned for scheme %d", schemeCode)
 	}
 
 	price, err := strconv.ParseFloat(apiResp.Data[0].Nav, 64)
 	if err != nil {
-		return 0, fmt.Errorf("failed to parse NAV value '%s': %w", apiResp.Data[0].Nav, err)
+		return 0, 0, fmt.Errorf("failed to parse NAV value '%s': %w", apiResp.Data[0].Nav, err)
+	}
+	prevDayPrice, err := strconv.ParseFloat(apiResp.Data[1].Nav, 64)
+	if err != nil {
+		return 0, 0, fmt.Errorf("failed to parse previous day NAV value '%s': %w", apiResp.Data[0].Nav, err)
 	}
 
-	return price, nil
+	return price, prevDayPrice, nil
 }
 
-func fetchLatestStockPrice(schemeCode string) (float64, error) {
+func FetchLatestStockPrice(schemeCode string) (float64, float64, error) {
 	url := fmt.Sprintf("https://query1.finance.yahoo.com/v8/finance/chart/%s?interval=1d&range=1d", schemeCode)
 
 	req, err := http.NewRequest("GET", url, nil)
 	if err != nil {
-		return 0, fmt.Errorf("failed to create request for %s: %w", schemeCode, err)
+		return 0, 0, fmt.Errorf("failed to create request for %s: %w", schemeCode, err)
 	}
 
 	// Mimicking a real browser request
@@ -145,12 +154,12 @@ func fetchLatestStockPrice(schemeCode string) (float64, error) {
 	resp, err := client.Do(req)
 
 	if err != nil {
-		return 0, fmt.Errorf("http request failed for scheme %s: %w", schemeCode, err)
+		return 0, 0, fmt.Errorf("http request failed for scheme %s: %w", schemeCode, err)
 	}
 	defer resp.Body.Close()
 
 	if resp.StatusCode != http.StatusOK {
-		return 0, fmt.Errorf("unexpected status %d for scheme %s", resp.StatusCode, schemeCode)
+		return 0, 0, fmt.Errorf("unexpected status %d for scheme %s", resp.StatusCode, schemeCode)
 	}
 
 	// Handle gzip encoding since we declared Accept-Encoding above
@@ -158,7 +167,7 @@ func fetchLatestStockPrice(schemeCode string) (float64, error) {
 	if resp.Header.Get("Content-Encoding") == "gzip" {
 		gzReader, err := gzip.NewReader(resp.Body)
 		if err != nil {
-			return 0, fmt.Errorf("failed to create gzip reader: %w", err)
+			return 0, 0, fmt.Errorf("failed to create gzip reader: %w", err)
 		}
 		defer gzReader.Close()
 		reader = gzReader
@@ -166,15 +175,15 @@ func fetchLatestStockPrice(schemeCode string) (float64, error) {
 
 	var apiResp model.StockChartResult
 	if err := json.NewDecoder(reader).Decode(&apiResp); err != nil {
-		return 0, fmt.Errorf("failed to decode response for %s: %w", schemeCode, err)
+		return 0, 0, fmt.Errorf("failed to decode response for %s: %w", schemeCode, err)
 	}
 
 	if len(apiResp.Chart.Result) == 0 {
-		return 0, fmt.Errorf("no data returned for stock %s", schemeCode)
+		return 0, 0, fmt.Errorf("no data returned for stock %s", schemeCode)
 	}
 
 	price := apiResp.Chart.Result[0].Meta.ChartPreviousClose
-	return price, nil
+	return price, price, nil
 }
 
 func fetchLatestPriceAndCalculateHolding(holdings *[]dto.HoldingResponseDto, fetcher PriceFetcher) {
@@ -185,7 +194,7 @@ func fetchLatestPriceAndCalculateHolding(holdings *[]dto.HoldingResponseDto, fet
 		wg.Add(1)
 		go func(i int, schemeCode, instrumentType string) {
 			defer wg.Done()
-			price, err := fetcher.FetchPrice(instrumentType, schemeCode)
+			price, _, err := fetcher.FetchPrice(instrumentType, schemeCode)
 			resultCh <- priceResult{index: i, price: price, err: err}
 		}(i, holding.AssetExternalPlatformID, holding.AssetInstrumentType)
 	}

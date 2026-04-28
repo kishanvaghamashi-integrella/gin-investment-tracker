@@ -2,6 +2,7 @@ package server
 
 import (
 	casparser "gin-investment-tracker/internal/cas-parser"
+	"gin-investment-tracker/internal/cron"
 	handler "gin-investment-tracker/internal/handlers"
 	middleware "gin-investment-tracker/internal/middlewares"
 	repository "gin-investment-tracker/internal/repositories"
@@ -26,6 +27,7 @@ func RegisterRoutes(r *gin.Engine, db *pgxpool.Pool) {
 	transactionRepository := repository.NewTransactionRepository(db)
 	holdingRepository := repository.NewHoldingRepository(db)
 	statementRepository := repository.NewStatementRepository(db)
+	priceDetailRepository := repository.NewPriceDetailRepository(db)
 
 	// Services
 	userService := service.NewUserService(userRepository)
@@ -42,6 +44,10 @@ func RegisterRoutes(r *gin.Engine, db *pgxpool.Pool) {
 	transactionHandler := handler.NewTransactionHandler(transactionService)
 	holdingHandler := handler.NewHoldingHandler(holdingService)
 	casStatementHandler := handler.NewCasStatementHandler(casStatementService)
+
+	// Cron Job
+	cronJob := cron.NewCronJobs(assetRepository, priceDetailRepository)
+	cronJob.Start()
 
 	// routes
 	if isDevelopmentEnvironment() {
