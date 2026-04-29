@@ -2,7 +2,7 @@ package casparser
 
 import (
 	"context"
-	casparsermodel "gin-investment-tracker/internal/cas-parser/model"
+	casparsermodel "gin-investment-tracker/internal/external-services/cas-parser/model"
 	"mime/multipart"
 )
 

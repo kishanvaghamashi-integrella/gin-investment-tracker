@@ -2,7 +2,7 @@ package service
 
 import (
 	"context"
-	casparser "gin-investment-tracker/internal/cas-parser"
+	casparser "gin-investment-tracker/internal/external-services/cas-parser"
 	repository "gin-investment-tracker/internal/repositories"
 	"log/slog"
 	"mime/multipart"
