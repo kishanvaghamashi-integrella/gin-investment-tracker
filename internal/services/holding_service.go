@@ -53,7 +53,6 @@ func round2(v float64) float64 {
 func calculateProfitDetails(holdings *[]dto.HoldingResponseDto) {
 	for i := range *holdings {
 		h := &(*holdings)[i]
-		h.Quantity = round2(h.Quantity)
 		h.AveragePrice = round2(h.AveragePrice)
 		h.CurrentPrice = round2(h.CurrentPrice)
 		h.PrevDayPrice = round2(h.PrevDayPrice)

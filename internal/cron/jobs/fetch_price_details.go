@@ -7,11 +7,9 @@ import (
 	repository "gin-investment-tracker/internal/repositories"
 	"log/slog"
 	"time"
-
-	"github.com/jackc/pgx/v5/pgxpool"
 )
 
-func FetchPriceDetailsJob(db *pgxpool.Pool, assetRepo repository.AssetRepositoryInterface, priceDetailRepo repository.PriceDetailRepositoryInterface, assetPriceFetcher *assetprice.AssetPriceService) {
+func FetchPriceDetailsJob(assetRepo repository.AssetRepositoryInterface, priceDetailRepo repository.PriceDetailRepositoryInterface, assetPriceFetcher *assetprice.AssetPriceService) {
 	// 1. fetch all the assets by limit and offset
 	limit := 50
 	offset := 0
@@ -33,7 +31,12 @@ func FetchPriceDetailsJob(db *pgxpool.Pool, assetRepo repository.AssetRepository
 		// 2. fetch price detail of each asset one by one using api
 		var priceDetailList []model.PriceDetail
 		for _, asset := range assets {
-			price, prevPrice, err := assetPriceFetcher.FetchPrice("mutual_fund", *asset.ExternalPlatformID)
+			if asset.ExternalPlatformID == nil {
+				slog.Error("Failed to fetch price value for asset: missing external platform ID", "asset_id", asset.ID, "instrument_type", asset.InstrumentType)
+				continue
+			}
+
+			price, prevPrice, err := assetPriceFetcher.FetchPrice(asset.InstrumentType, *asset.ExternalPlatformID)
 			if err != nil {
 				slog.Error("Failed to fetch price value for asset", "external platform ID", asset.ExternalPlatformID)
 				continue

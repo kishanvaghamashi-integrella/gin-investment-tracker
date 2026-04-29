@@ -22,9 +22,9 @@ func (m *MfapiFetcher) FetchPrice(externalID string) (float64, float64, error) {
 	}
 
 	currDate := time.Now()
-	endDateStr := currDate.Format("2001-12-02")
+	endDateStr := currDate.Format("2006-01-02")
 	startDate := currDate.AddDate(0, 0, -7)
-	startDateStr := startDate.Format("2001-12-02")
+	startDateStr := startDate.Format("2006-01-02")
 
 	url := fmt.Sprintf("https://api.mfapi.in/mf/%d?startDate=%s&endDate=%s", schemeCode, startDateStr, endDateStr)
 
@@ -47,7 +47,7 @@ func (m *MfapiFetcher) FetchPrice(externalID string) (float64, float64, error) {
 		return 0, 0, fmt.Errorf("api returned non-success status for scheme %d", schemeCode)
 	}
 
-	if len(apiResp.Data) == 0 {
+	if len(apiResp.Data) < 2 {
 		return 0, 0, fmt.Errorf("no NAV data returned for scheme %d", schemeCode)
 	}
 
