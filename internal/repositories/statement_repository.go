@@ -8,7 +8,7 @@ import (
 	"strconv"
 	"time"
 
-	casparsermodel "gin-investment-tracker/internal/cas-parser/model"
+	casparsermodel "gin-investment-tracker/internal/external-services/cas-parser/model"
 	"gin-investment-tracker/internal/util"
 
 	"github.com/jackc/pgx/v5"

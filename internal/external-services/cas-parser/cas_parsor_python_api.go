@@ -5,7 +5,7 @@ import (
 	"context"
 	"encoding/json"
 	"fmt"
-	casparsermodel "gin-investment-tracker/internal/cas-parser/model"
+	casparsermodel "gin-investment-tracker/internal/external-services/cas-parser/model"
 	"io"
 	"log/slog"
 	"mime/multipart"

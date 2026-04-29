@@ -1,8 +1,9 @@
 package server
 
 import (
-	casparser "gin-investment-tracker/internal/cas-parser"
 	"gin-investment-tracker/internal/cron"
+	assetprice "gin-investment-tracker/internal/external-services/asset-details"
+	casparser "gin-investment-tracker/internal/external-services/cas-parser"
 	handler "gin-investment-tracker/internal/handlers"
 	middleware "gin-investment-tracker/internal/middlewares"
 	repository "gin-investment-tracker/internal/repositories"
@@ -17,8 +18,11 @@ import (
 )
 
 func RegisterRoutes(r *gin.Engine, db *pgxpool.Pool) {
-	// dependecy
+	// 3rd party services
 	casParser := casparser.NewCasParserPythonApi()
+	mfPriceFetcher := assetprice.NewMfapiFetcher()
+	stockPriceFetcher := assetprice.NewYahooStockFetcher()
+	assetPriceFetcher := assetprice.NewAssetPriceService(stockPriceFetcher, mfPriceFetcher)
 
 	// Repositories
 	userRepository := repository.NewUserRepository(db)
@@ -46,7 +50,7 @@ func RegisterRoutes(r *gin.Engine, db *pgxpool.Pool) {
 	casStatementHandler := handler.NewCasStatementHandler(casStatementService)
 
 	// Cron Job
-	cronJob := cron.NewCronJobs(assetRepository, priceDetailRepository)
+	cronJob := cron.NewCronJobs(assetRepository, priceDetailRepository, assetPriceFetcher)
 	cronJob.Start()
 
 	// routes
