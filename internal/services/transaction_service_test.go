@@ -329,7 +329,7 @@ func TestTransactionService_GetAllByUserID_Success(t *testing.T) {
 	assetRepo := new(mocks.MockAssetRepository)
 	svc := newTransactionService(txnRepo, userAssetRepo, userRepo, assetRepo)
 
-	expected := []dto.ResponseTransactionDto{
+	expected := []dto.TransactionResponseDto{
 		{ID: 1, AssetName: "INFY", TxnType: "BUY", Quantity: 10, Price: 100},
 		{ID: 2, AssetName: "TCS", TxnType: "SELL", Quantity: 5, Price: 200},
 	}

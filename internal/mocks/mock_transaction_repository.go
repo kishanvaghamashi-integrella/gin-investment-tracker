@@ -18,12 +18,12 @@ func (m *MockTransactionRepository) Create(ctx context.Context, txn *model.Trans
 	return args.Error(0)
 }
 
-func (m *MockTransactionRepository) GetAllByUserID(ctx context.Context, userID int64, limit, offset int) ([]dto.ResponseTransactionDto, error) {
+func (m *MockTransactionRepository) GetAllByUserID(ctx context.Context, userID int64, limit, offset int) ([]dto.TransactionResponseDto, error) {
 	args := m.Called(ctx, userID, limit, offset)
 	if args.Get(0) == nil {
 		return nil, args.Error(1)
 	}
-	return args.Get(0).([]dto.ResponseTransactionDto), args.Error(1)
+	return args.Get(0).([]dto.TransactionResponseDto), args.Error(1)
 }
 
 func (m *MockTransactionRepository) GetHoldingsByUserAssetID(ctx context.Context, userAssetID int64) (*model.Holding, error) {

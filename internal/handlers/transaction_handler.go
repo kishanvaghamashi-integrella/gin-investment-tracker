@@ -85,7 +85,7 @@ func (h *TransactionHandler) Create(c *gin.Context) {
 // @Produce json
 // @Param limit query int false "Number of records to return (default: 50, max: 200)"
 // @Param offset query int false "Number of records to skip (default: 0)"
-// @Success 200 {array} dto.ResponseTransactionDto
+// @Success 200 {array} dto.TransactionResponseDto
 // @Failure 400 {object} util.ErrorBody
 // @Failure 404 {object} util.ErrorBody
 // @Failure 500 {object} util.ErrorBody
@@ -194,4 +194,3 @@ func (h *TransactionHandler) Delete(c *gin.Context) {
 	slog.Info("transaction deleted", "handler", "TransactionHandler.Delete", "transactionID", id)
 	util.SendResponse(c, http.StatusOK, map[string]string{"message": "transaction deleted successfully"})
 }
-

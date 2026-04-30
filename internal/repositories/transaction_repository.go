@@ -75,7 +75,7 @@ func (r *TransactionRepository) Create(ctx context.Context, txn *model.Transacti
 	return nil
 }
 
-func (r *TransactionRepository) GetAllByUserID(ctx context.Context, userID int64, limit, offset int) ([]dto.ResponseTransactionDto, error) {
+func (r *TransactionRepository) GetAllByUserID(ctx context.Context, userID int64, limit, offset int) ([]dto.TransactionResponseDto, error) {
 	query := `
 		SELECT t.id, t.user_asset_id, a.name, a.instrument_type, t.txn_type, t.quantity, t.price, t.txn_date
 		FROM transactions t
@@ -93,9 +93,9 @@ func (r *TransactionRepository) GetAllByUserID(ctx context.Context, userID int64
 	}
 	defer rows.Close()
 
-	var transactions []dto.ResponseTransactionDto
+	var transactions []dto.TransactionResponseDto
 	for rows.Next() {
-		var txn dto.ResponseTransactionDto
+		var txn dto.TransactionResponseDto
 		if err := rows.Scan(&txn.ID, &txn.UserAssetID, &txn.AssetName, &txn.AssetInstrumentType, &txn.TxnType, &txn.Quantity, &txn.Price, &txn.TxnDate); err != nil {
 			slog.Error("failed to scan transaction row", "error", err.Error())
 			return nil, util.NewInternalError("failed to list transactions")

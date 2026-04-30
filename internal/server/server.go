@@ -32,6 +32,7 @@ func RegisterRoutes(r *gin.Engine, db *pgxpool.Pool) {
 	holdingRepository := repository.NewHoldingRepository(db)
 	statementRepository := repository.NewStatementRepository(db)
 	priceDetailRepository := repository.NewPriceDetailRepository(db)
+	dashboardRepository := repository.NewDashboardRepository(db)
 
 	// Services
 	userService := service.NewUserService(userRepository)
@@ -40,6 +41,7 @@ func RegisterRoutes(r *gin.Engine, db *pgxpool.Pool) {
 	transactionService := service.NewTransactionService(transactionRepository, userAssetRepository, userRepository, assetRepository)
 	holdingService := service.NewHoldingService(holdingRepository, userRepository)
 	casStatementService := service.NewCasStatementService(casParser, transactionRepository, holdingRepository, userAssetRepository, statementRepository)
+	dashboardService := service.NewDashboardService(dashboardRepository)
 
 	// Handlers
 	userHandler := handler.NewUserHandler(userService)
@@ -48,6 +50,7 @@ func RegisterRoutes(r *gin.Engine, db *pgxpool.Pool) {
 	transactionHandler := handler.NewTransactionHandler(transactionService)
 	holdingHandler := handler.NewHoldingHandler(holdingService)
 	casStatementHandler := handler.NewCasStatementHandler(casStatementService)
+	dashboardHandler := handler.NewDashboardHandler(dashboardService)
 
 	// Cron Job
 	cronJob := cron.NewCronJobs(assetRepository, priceDetailRepository, assetPriceFetcher)
@@ -69,6 +72,7 @@ func RegisterRoutes(r *gin.Engine, db *pgxpool.Pool) {
 		transactionHandler.SetRoutes(protectedRouter)
 		holdingHandler.SetRoutes(protectedRouter)
 		casStatementHandler.SetRoutes(protectedRouter)
+		dashboardHandler.SetRoutes(protectedRouter)
 	}
 }
 

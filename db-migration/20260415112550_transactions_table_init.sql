@@ -9,6 +9,7 @@ CREATE TABLE transactions (
     txn_date TIMESTAMPTZ NOT NULL,
     created_at TIMESTAMPTZ NOT NULL DEFAULT now()
 );
+CREATE INDEX idx_transactions_user_asset_txn_date ON transactions(user_asset_id, txn_date DESC);
 -- +goose StatementBegin
 SELECT 'up SQL query';
 -- +goose StatementEnd
