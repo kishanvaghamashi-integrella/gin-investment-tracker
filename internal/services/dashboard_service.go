@@ -21,9 +21,18 @@ func (s *DashboardService) GetDashboardData(ctx context.Context, userID int64) (
 		return nil, err
 	}
 
-	data.CurrentInvestmentValue = round2(data.CurrentInvestmentValue)
-	data.PreviousDayInvestmentValue = round2(data.PreviousDayInvestmentValue)
-	data.TotalInvestedValue = round2(data.TotalInvestedValue)
+	if data.CurrentInvestmentValue != nil {
+		v1 := round2(*data.CurrentInvestmentValue)
+		data.CurrentInvestmentValue = &v1
+	}
+	if data.PreviousDayInvestmentValue != nil {
+		v2 := round2(*data.PreviousDayInvestmentValue)
+		data.PreviousDayInvestmentValue = &v2
+	}
+	if data.TotalInvestedValue != nil {
+		v3 := round2(*data.TotalInvestedValue)
+		data.TotalInvestedValue = &v3
+	}
 
 	calculateProfitDetails(&data.TopHoldings)
 

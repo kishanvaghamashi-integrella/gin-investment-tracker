@@ -24,22 +24,26 @@ func (r *DashboardRepository) GetDashboardData(ctx context.Context, userID int64
 	// Quick insights
 	query := `
 		SELECT 
-			SUM(h.total_quantity * COALESCE(pd.curr_price, 0)) as current_investment_value,
-			SUM(h.total_quantity * COALESCE(pd.prev_price, 0)) as previous_day_investment_value,
-			SUM(h.total_invested) as total_invested_value
+			COALESCE(SUM(h.total_quantity * COALESCE(pd.curr_price, 0)), 0) as current_investment_value,
+			COALESCE(SUM(h.total_quantity * COALESCE(pd.prev_price, 0)), 0) as previous_day_investment_value,
+			COALESCE(SUM(h.total_invested), 0) as total_invested_value
 		FROM holdings h
 		INNER JOIN user_assets ua ON h.user_asset_id = ua.id
 		LEFT JOIN price_details pd ON ua.asset_id = pd.asset_id
 		WHERE ua.user_id = $1
 	`
+	var curr, prev, total float64
 	if err := r.db.QueryRow(ctx, query, userID).Scan(
-		&dashboardDataDto.CurrentInvestmentValue,
-		&dashboardDataDto.PreviousDayInvestmentValue,
-		&dashboardDataDto.TotalInvestedValue,
+		&curr,
+		&prev,
+		&total,
 	); err != nil {
 		slog.Error("failed to fetch dashboard data quick insights of portfolio", "error", err.Error())
 		return nil, util.NewInternalError("failed to fetch dashboard data")
 	}
+	dashboardDataDto.CurrentInvestmentValue = &curr
+	dashboardDataDto.PreviousDayInvestmentValue = &prev
+	dashboardDataDto.TotalInvestedValue = &total
 
 	// Top Holdings
 	query = `
@@ -109,7 +113,7 @@ func (r *DashboardRepository) GetDashboardData(ctx context.Context, userID int64
 	`
 	rows2, err := r.db.Query(ctx, query, userID)
 	if err != nil {
-		slog.Error("failed to fetch top holdings data for dashboard", "error", err.Error())
+		slog.Error("failed to fetch recent transactions data for dashboard", "error", err.Error())
 		return nil, util.NewInternalError("failed to fetch dashboard data")
 	}
 

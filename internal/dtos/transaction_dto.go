@@ -6,8 +6,8 @@ type CreateTransactionRequest struct {
 	AssetID     int64     `json:"asset_id,omitempty" binding:"required,gt=0"`
 	TxnType     string    `json:"txn_type,omitempty" binding:"required,txn_type"`
 	Description *string   `json:"description,omitempty"`
-	Quantity    float64   `json:"quantity,omitempty" binding:"required,gt=0"`
-	Price       float64   `json:"price,omitempty" binding:"required,gt=0"`
+	Quantity    float64   `json:"quantity" binding:"required,gt=0"`
+	Price       float64   `json:"price" binding:"required,gt=0"`
 	TxnDate     time.Time `json:"txn_date,omitempty" binding:"required"`
 }
 
@@ -26,7 +26,7 @@ type TransactionResponseDto struct {
 	AssetInstrumentType string    `json:"asset_instrument_type,omitempty"`
 	Description         *string   `json:"description,omitempty"`
 	TxnType             string    `json:"txn_type,omitempty"`
-	Quantity            float64   `json:"quantity,omitempty"`
-	Price               float64   `json:"price,omitempty"`
+	Quantity            float64   `json:"quantity"`
+	Price               float64   `json:"price"`
 	TxnDate             time.Time `json:"txn_date,omitempty"`
 }
