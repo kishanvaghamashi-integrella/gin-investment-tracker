@@ -325,7 +325,7 @@ func TestTransactionHandler_GetAllByUserID_Success(t *testing.T) {
 	token := validTxnToken(t, 1, "user@example.com")
 	svc := new(mocks.MockTransactionService)
 	svc.On("GetAllByUserID", mock.Anything, int64(1), 50, 0).
-		Return([]dto.ResponseTransactionDto{{ID: 1, AssetName: "INFY", TxnType: "BUY"}}, nil)
+		Return([]dto.TransactionResponseDto{{ID: 1, AssetName: "INFY", TxnType: "BUY"}}, nil)
 
 	r := setupTransactionRouter(svc)
 	req := httptest.NewRequest(http.MethodGet, "/api/transactions", nil)
@@ -343,7 +343,7 @@ func TestTransactionHandler_GetAllByUserID_CustomPagination(t *testing.T) {
 	token := validTxnToken(t, 1, "user@example.com")
 	svc := new(mocks.MockTransactionService)
 	svc.On("GetAllByUserID", mock.Anything, int64(1), 10, 20).
-		Return([]dto.ResponseTransactionDto{}, nil)
+		Return([]dto.TransactionResponseDto{}, nil)
 
 	r := setupTransactionRouter(svc)
 	req := httptest.NewRequest(http.MethodGet, "/api/transactions?limit=10&offset=20", nil)
@@ -392,7 +392,7 @@ func TestTransactionHandler_GetAllByUserID_LimitCappedToMax(t *testing.T) {
 	token := validTxnToken(t, 1, "user@example.com")
 	svc := new(mocks.MockTransactionService)
 	svc.On("GetAllByUserID", mock.Anything, int64(1), 200, 0).
-		Return([]dto.ResponseTransactionDto{}, nil)
+		Return([]dto.TransactionResponseDto{}, nil)
 
 	r := setupTransactionRouter(svc)
 	req := httptest.NewRequest(http.MethodGet, "/api/transactions?limit=999", nil)

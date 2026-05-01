@@ -1,10 +1,10 @@
 package dto
 
 type HoldingResponseDto struct {
-	ID                  int64   `json:"id"`
-	AssetID             int64   `json:"asset_id"`
-	AssetName           string  `json:"asset_name"`
-	AssetInstrumentType string  `json:"asset_instrument_type"`
+	ID                  int64   `json:"id,omitempty"`
+	AssetID             int64   `json:"asset_id,omitempty"`
+	AssetName           string  `json:"asset_name,omitempty"`
+	AssetInstrumentType string  `json:"asset_instrument_type,omitempty"`
 	Quantity            float64 `json:"quantity"`
 	AveragePrice        float64 `json:"average_price"`
 	CurrentPrice        float64 `json:"current_price"`

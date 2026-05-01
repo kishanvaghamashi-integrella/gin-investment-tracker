@@ -21,12 +21,12 @@ func (m *MockTransactionService) Create(ctx context.Context, req *dto.CreateTran
 	return args.Get(0).(*model.Transaction), args.Error(1)
 }
 
-func (m *MockTransactionService) GetAllByUserID(ctx context.Context, userID int64, limit, offset int) ([]dto.ResponseTransactionDto, error) {
+func (m *MockTransactionService) GetAllByUserID(ctx context.Context, userID int64, limit, offset int) ([]dto.TransactionResponseDto, error) {
 	args := m.Called(ctx, userID, limit, offset)
 	if args.Get(0) == nil {
 		return nil, args.Error(1)
 	}
-	return args.Get(0).([]dto.ResponseTransactionDto), args.Error(1)
+	return args.Get(0).([]dto.TransactionResponseDto), args.Error(1)
 }
 
 func (m *MockTransactionService) Update(ctx context.Context, id int64, req *dto.UpdateTransactionRequest) error {
