@@ -1,7 +1,6 @@
 package handler
 
 import (
-	"context"
 	"encoding/json"
 	"errors"
 	"io"
@@ -27,7 +26,7 @@ type AuthHandler struct {
 	service        service.AuthServiceInterface
 }
 
-func NewUserHandler(svc service.AuthServiceInterface) *AuthHandler {
+func NewAuthHandler(svc service.AuthServiceInterface) *AuthHandler {
 	googleOAuthConfig := &oauth2.Config{
 		ClientID:     os.Getenv("GOOGLE_CLIENT_ID"),
 		ClientSecret: os.Getenv("GOOGLE_CLIENT_SECRET"),
@@ -68,7 +67,7 @@ func (h *AuthHandler) SetRoutes(r *gin.RouterGroup) {
 // @Failure 500 {object} util.ErrorBody
 // @Router /api/auth [post]
 func (h *AuthHandler) Signup(c *gin.Context) {
-	slog.Info("request started", "handler", "AuthHandler.Create", "method", c.Request.Method, "path", c.Request.URL.Path)
+	slog.Info("request started", "handler", "AuthHandler.Signup", "method", c.Request.Method, "path", c.Request.URL.Path)
 
 	var req dto.CreateUserRequest
 	if err := c.ShouldBindJSON(&req); err != nil {
@@ -79,17 +78,17 @@ func (h *AuthHandler) Signup(c *gin.Context) {
 			return
 		}
 
-		slog.Warn("failed to bind request body", "handler", "AuthHandler.Create", "error", err)
+		slog.Warn("failed to bind request body", "handler", "AuthHandler.Signup", "error", err)
 		util.SendErrorResponse(c, http.StatusBadRequest, err.Error())
 		return
 	}
 
 	if err := h.service.Create(c.Request.Context(), &req); err != nil {
-		util.HandleError(c, err, "AuthHandler.Create")
+		util.HandleError(c, err, "AuthHandler.Signup")
 		return
 	}
 
-	slog.Info("user created successfully", "handler", "AuthHandler.Create")
+	slog.Info("user created successfully", "handler", "AuthHandler.Signup")
 	util.SendResponse(c, http.StatusOK, map[string]string{"message": "user created successfully"})
 }
 
@@ -214,7 +213,11 @@ func (h *AuthHandler) DeleteUser(c *gin.Context) {
 // @Router /api/auth/google/login [get]
 func (h *AuthHandler) GoogleLogin(c *gin.Context) {
 	state := uuid.New().String()
-	util.StoreOAuthState(state) // To verify that user is completing creating or login within 5 minutes
+	if err := util.StoreOAuthState(state); err != nil {
+		slog.Warn("oauth state store full, rejecting login initiation", "handler", "AuthHandler.GoogleLogin", "error", err)
+		util.SendErrorResponse(c, http.StatusServiceUnavailable, "too many pending login attempts, please try again later")
+		return
+	}
 	authURL := h.googleOAuthCfg.AuthCodeURL(state, oauth2.AccessTypeOffline)
 	c.Redirect(http.StatusTemporaryRedirect, authURL)
 }
@@ -237,50 +240,62 @@ func (h *AuthHandler) GoogleCallback(c *gin.Context) {
 	code := c.Query("code")
 	if code == "" {
 		slog.Warn("missing oauth code", "handler", "AuthHandler.GoogleCallback")
-		util.SendErrorResponse(c, http.StatusBadRequest, "missing oauth code")
+		c.Redirect(http.StatusSeeOther, "http://localhost:3000/login")
 		return
 	}
 
 	state := c.Query("state")
 	if !util.ValidateAndConsumeOAuthState(state) {
 		slog.Warn("invalid or expired oauth state", "handler", "AuthHandler.GoogleCallback")
-		util.SendErrorResponse(c, http.StatusBadRequest, "invalid or expired oauth state")
+		c.Redirect(http.StatusSeeOther, "http://localhost:3000/login")
 		return
 	}
 
-	token, err := h.googleOAuthCfg.Exchange(context.Background(), code)
+	token, err := h.googleOAuthCfg.Exchange(c.Request.Context(), code)
 	if err != nil {
 		slog.Error("failed to exchange oauth code", "handler", "AuthHandler.GoogleCallback", "error", err)
-		util.SendErrorResponse(c, http.StatusUnauthorized, "failed to exchange oauth code")
+		c.Redirect(http.StatusSeeOther, "http://localhost:3000/login")
 		return
 	}
 
-	client := h.googleOAuthCfg.Client(context.Background(), token)
+	client := h.googleOAuthCfg.Client(c.Request.Context(), token)
 	resp, err := client.Get("https://www.googleapis.com/oauth2/v3/userinfo")
 	if err != nil {
 		slog.Error("failed to fetch user info from google", "handler", "AuthHandler.GoogleCallback", "error", err)
-		util.SendErrorResponse(c, http.StatusInternalServerError, "failed to fetch user info")
+		c.Redirect(http.StatusSeeOther, "http://localhost:3000/login")
 		return
 	}
+	if resp.StatusCode < http.StatusOK || resp.StatusCode >= http.StatusMultipleChoices {
+		body, readErr := io.ReadAll(resp.Body)
+		if readErr != nil {
+			slog.Error("google userinfo returned non-success status and response body could not be read", "handler", "AuthHandler.GoogleCallback", "statusCode", resp.StatusCode, "error", readErr)
+			util.SendErrorResponse(c, http.StatusBadGateway, "failed to fetch user info from google")
+			return
+		}
+		slog.Error("google userinfo returned non-success status", "handler", "AuthHandler.GoogleCallback", "statusCode", resp.StatusCode, "responseBody", string(body))
+		c.Redirect(http.StatusSeeOther, "http://localhost:3000/login")
+		return
+	}
+
 	defer resp.Body.Close()
 
 	body, err := io.ReadAll(resp.Body)
 	if err != nil {
 		slog.Error("failed to read google userinfo response", "handler", "AuthHandler.GoogleCallback", "error", err)
-		util.SendErrorResponse(c, http.StatusInternalServerError, "failed to read user info")
+		c.Redirect(http.StatusSeeOther, "http://localhost:3000/login")
 		return
 	}
 
 	var userInfo dto.GoogleUserInfo
 	if err := json.Unmarshal(body, &userInfo); err != nil {
 		slog.Error("failed to parse google userinfo", "handler", "AuthHandler.GoogleCallback", "error", err)
-		util.SendErrorResponse(c, http.StatusInternalServerError, "failed to parse user info")
+		c.Redirect(http.StatusSeeOther, "http://localhost:3000/login")
 		return
 	}
 
 	if !userInfo.EmailVerified {
 		slog.Warn("google email not verified", "handler", "AuthHandler.GoogleCallback", "email", userInfo.Email)
-		util.SendErrorResponse(c, http.StatusUnauthorized, "google email not verified")
+		c.Redirect(http.StatusSeeOther, "http://localhost:3000/login")
 		return
 	}
 

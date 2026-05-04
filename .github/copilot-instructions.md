@@ -79,8 +79,8 @@ Currently registered custom validators:
 
 Shared helpers live in `internal/handlers/helper.go`. **Always use these instead of inline parsing.**
 
-| Helper                  | Signature                                          | Usage                                                                                |
-| ----------------------- | -------------------------------------------------- | ------------------------------------------------------------------------------------ |
+| Helper                  | Signature                                         | Usage                                                                                |
+| ----------------------- | ------------------------------------------------- | ------------------------------------------------------------------------------------ |
 | `parseIntegerID`        | `(c *gin.Context, param string) (int64, error)`   | Parse a path parameter as int64                                                      |
 | `parsePaginationParams` | `(c *gin.Context) (limit, offset int, err error)` | Parse `limit`/`offset` query params with defaults (50/0) and a silent max-cap of 200 |
 
@@ -137,7 +137,7 @@ All `testify/mock` structs live in `internal/mocks/`:
 ```go
 gin.SetMode(gin.TestMode)          // in init() or per-test
 r := gin.New()                     // bare engine, no middleware noise
-h := handler.NewUserHandler(svc)   // inject mock service
+h := handler.NewAuthHandler(svc)   // inject mock service
 // register routes manually, matching routes/routes.go
 ```
 
