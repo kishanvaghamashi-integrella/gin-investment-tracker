@@ -22,7 +22,7 @@ import (
 
 func TestUserService_Create_Success(t *testing.T) {
 	mockRepo := new(mocks.MockUserRepository)
-	svc := service.NewUserService(mockRepo)
+	svc := service.NewAuthService(mockRepo)
 
 	req := &dto.CreateUserRequest{
 		Name:     "Alice",
@@ -41,7 +41,7 @@ func TestUserService_Create_Success(t *testing.T) {
 
 func TestUserService_Create_RepoError(t *testing.T) {
 	mockRepo := new(mocks.MockUserRepository)
-	svc := service.NewUserService(mockRepo)
+	svc := service.NewAuthService(mockRepo)
 
 	req := &dto.CreateUserRequest{
 		Name:     "Alice",
@@ -66,7 +66,7 @@ func TestUserService_Create_RepoError(t *testing.T) {
 func TestUserService_Login_Success(t *testing.T) {
 	t.Setenv("JWT_SECRET", "test-secret-key")
 	mockRepo := new(mocks.MockUserRepository)
-	svc := service.NewUserService(mockRepo)
+	svc := service.NewAuthService(mockRepo)
 
 	plainPassword := "secret123"
 	hash, err := util.HashPassword(plainPassword)
@@ -99,7 +99,7 @@ func TestUserService_Login_Success(t *testing.T) {
 
 func TestUserService_Login_EmailNotFound(t *testing.T) {
 	mockRepo := new(mocks.MockUserRepository)
-	svc := service.NewUserService(mockRepo)
+	svc := service.NewAuthService(mockRepo)
 
 	req := &dto.LoginRequest{
 		Email:    "ghost@example.com",
@@ -121,7 +121,7 @@ func TestUserService_Login_EmailNotFound(t *testing.T) {
 
 func TestUserService_Login_WrongPassword(t *testing.T) {
 	mockRepo := new(mocks.MockUserRepository)
-	svc := service.NewUserService(mockRepo)
+	svc := service.NewAuthService(mockRepo)
 
 	hash, err := util.HashPassword("correct-password")
 	require.NoError(t, err)
@@ -153,7 +153,7 @@ func TestUserService_Login_WrongPassword(t *testing.T) {
 
 func TestUserService_Login_RepoInternalError(t *testing.T) {
 	mockRepo := new(mocks.MockUserRepository)
-	svc := service.NewUserService(mockRepo)
+	svc := service.NewAuthService(mockRepo)
 
 	req := &dto.LoginRequest{
 		Email:    "alice@example.com",
@@ -179,7 +179,7 @@ func TestUserService_Login_RepoInternalError(t *testing.T) {
 
 func TestUserService_GetByID_Success(t *testing.T) {
 	mockRepo := new(mocks.MockUserRepository)
-	svc := service.NewUserService(mockRepo)
+	svc := service.NewAuthService(mockRepo)
 
 	expected := &model.User{ID: 42, Name: "Bob", Email: "bob@example.com"}
 	mockRepo.On("GetByID", context.Background(), int64(42)).Return(expected, nil)
@@ -194,7 +194,7 @@ func TestUserService_GetByID_Success(t *testing.T) {
 
 func TestUserService_GetByID_NotFound(t *testing.T) {
 	mockRepo := new(mocks.MockUserRepository)
-	svc := service.NewUserService(mockRepo)
+	svc := service.NewAuthService(mockRepo)
 
 	notFound := util.NewNotFoundError("User not found")
 	mockRepo.On("GetByID", context.Background(), int64(99)).Return(nil, notFound)
@@ -211,7 +211,7 @@ func TestUserService_GetByID_NotFound(t *testing.T) {
 
 func TestUserService_GetByID_InternalError(t *testing.T) {
 	mockRepo := new(mocks.MockUserRepository)
-	svc := service.NewUserService(mockRepo)
+	svc := service.NewAuthService(mockRepo)
 
 	mockRepo.On("GetByID", context.Background(), int64(1)).Return(nil, errors.New("db timeout"))
 
@@ -229,7 +229,7 @@ func TestUserService_GetByID_InternalError(t *testing.T) {
 
 func TestUserService_Delete_Success(t *testing.T) {
 	mockRepo := new(mocks.MockUserRepository)
-	svc := service.NewUserService(mockRepo)
+	svc := service.NewAuthService(mockRepo)
 
 	mockRepo.On("Delete", context.Background(), int64(1)).Return(nil)
 
@@ -241,7 +241,7 @@ func TestUserService_Delete_Success(t *testing.T) {
 
 func TestUserService_Delete_NotFound(t *testing.T) {
 	mockRepo := new(mocks.MockUserRepository)
-	svc := service.NewUserService(mockRepo)
+	svc := service.NewAuthService(mockRepo)
 
 	notFound := util.NewNotFoundError("no user found with id 99")
 	mockRepo.On("Delete", context.Background(), int64(99)).Return(notFound)
@@ -257,7 +257,7 @@ func TestUserService_Delete_NotFound(t *testing.T) {
 
 func TestUserService_Delete_InternalError(t *testing.T) {
 	mockRepo := new(mocks.MockUserRepository)
-	svc := service.NewUserService(mockRepo)
+	svc := service.NewAuthService(mockRepo)
 
 	internalErr := util.NewInternalError("failed to delete user")
 	mockRepo.On("Delete", context.Background(), int64(1)).Return(internalErr)

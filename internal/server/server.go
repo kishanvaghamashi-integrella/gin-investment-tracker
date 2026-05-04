@@ -35,7 +35,7 @@ func RegisterRoutes(r *gin.Engine, db *pgxpool.Pool) {
 	dashboardRepository := repository.NewDashboardRepository(db)
 
 	// Services
-	userService := service.NewUserService(userRepository)
+	userService := service.NewAuthService(userRepository)
 	assetService := service.NewAssetService(assetRepository)
 	userAssetService := service.NewUserAssetService(userAssetRepository, userRepository, assetRepository)
 	transactionService := service.NewTransactionService(transactionRepository, userAssetRepository, userRepository, assetRepository)
@@ -44,7 +44,7 @@ func RegisterRoutes(r *gin.Engine, db *pgxpool.Pool) {
 	dashboardService := service.NewDashboardService(dashboardRepository)
 
 	// Handlers
-	userHandler := handler.NewUserHandler(userService)
+	userHandler := handler.NewAuthHandler(userService)
 	assetHandler := handler.NewAssetHandler(assetService)
 	userAssetHandler := handler.NewUserAssetHandler(userAssetService)
 	transactionHandler := handler.NewTransactionHandler(transactionService)

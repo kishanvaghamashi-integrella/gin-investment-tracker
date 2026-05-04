@@ -28,7 +28,7 @@ func init() {
 // all four routes, mirroring routes/routes.go.
 func setupRouter(svc *mocks.MockUserService) *gin.Engine {
 	r := gin.New()
-	h := handler.NewUserHandler(svc)
+	h := handler.NewAuthHandler(svc)
 	api := r.Group("/api")
 	users := api.Group("/users")
 	users.POST("", h.Signup)

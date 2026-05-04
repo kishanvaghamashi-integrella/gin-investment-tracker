@@ -63,8 +63,8 @@ func (r *UserRepository) Delete(ctx context.Context, userId int64) error {
 
 func (r *UserRepository) CreateGoogleUser(ctx context.Context, user *model.User) error {
 	query := `
-		INSERT INTO users(name, email, password_hash, google_id)
-		VALUES($1, $2, '', $3)
+		INSERT INTO users(name, email, password_hash, google_id, auth_method)
+		VALUES($1, $2, '', $3, 'google')
 		RETURNING id
 	`
 
@@ -78,14 +78,14 @@ func (r *UserRepository) CreateGoogleUser(ctx context.Context, user *model.User)
 
 func (r *UserRepository) GetByEmail(ctx context.Context, email string) (*model.User, error) {
 	query := `
-		SELECT id, name, email, password_hash, is_active, created_at, updated_at
+		SELECT id, name, email, password_hash, auth_method, is_active, created_at, updated_at
 		FROM users
 		WHERE email = $1 AND is_active = TRUE
 	`
 
 	var user model.User
 	err := r.db.QueryRow(ctx, query, email).Scan(
-		&user.ID, &user.Name, &user.Email, &user.PasswordHash,
+		&user.ID, &user.Name, &user.Email, &user.PasswordHash, &user.AuthMethod,
 		&user.IsActive, &user.CreatedAt, &user.UpdatedAt,
 	)
 	if err != nil {
@@ -97,14 +97,14 @@ func (r *UserRepository) GetByEmail(ctx context.Context, email string) (*model.U
 
 func (r *UserRepository) GetByID(ctx context.Context, id int64) (*model.User, error) {
 	query := `
-		SELECT id, name, email, password_hash, is_active, created_at, updated_at
+		SELECT id, name, email, password_hash, auth_method, is_active, created_at, updated_at
 		FROM users
 		WHERE id = $1 AND is_active = TRUE
 	`
 
 	var user model.User
 	err := r.db.QueryRow(ctx, query, id).Scan(
-		&user.ID, &user.Name, &user.Email, &user.PasswordHash,
+		&user.ID, &user.Name, &user.Email, &user.PasswordHash, &user.AuthMethod,
 		&user.IsActive, &user.CreatedAt, &user.UpdatedAt,
 	)
 	if err != nil {
@@ -119,14 +119,14 @@ func (r *UserRepository) GetByID(ctx context.Context, id int64) (*model.User, er
 
 func (r *UserRepository) GetByGoogleID(ctx context.Context, googleId string) (*model.User, error) {
 	query := `
-		SELECT id, name, email, password_hash, google_id, is_active, created_at, updated_at
+		SELECT id, name, email, password_hash, google_id, auth_method, is_active, created_at, updated_at
 		FROM users
-		WHERE google_id = $1 AND is_active = TRUE
+		WHERE google_id = $1 AND is_active = TRUE AND auth_method = 'google'
 	`
 
 	var user model.User
 	err := r.db.QueryRow(ctx, query, googleId).Scan(
-		&user.ID, &user.Name, &user.Email, &user.PasswordHash, &user.GoogleID,
+		&user.ID, &user.Name, &user.Email, &user.PasswordHash, &user.GoogleID, &user.AuthMethod,
 		&user.IsActive, &user.CreatedAt, &user.UpdatedAt,
 	)
 	if err != nil {
