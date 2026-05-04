@@ -33,9 +33,9 @@ func setupRouter(svc *mocks.MockUserService) *gin.Engine {
 	users := api.Group("/users")
 	users.POST("", h.Signup)
 	users.POST("/login", h.Login)
+	users.POST("/logout", h.Logout)
 	users.GET("/verify", middleware.JWTAuth(), h.GetUserDetails)
 	users.DELETE("", middleware.JWTAuth(), h.DeleteUser)
-	users.POST("/logout", h.Logout)
 	return r
 }
 
@@ -578,5 +578,5 @@ func TestUserHandler_Logout_Success(t *testing.T) {
 	}
 	require.NotNil(t, cleared, "jwt_token cookie must be present in response to clear it")
 	assert.True(t, cleared.MaxAge < 0, "cookie MaxAge must be negative to clear it")
-	svc.AssertNotCalled(t, mock.Anything)
+	assert.Empty(t, svc.Calls)
 }

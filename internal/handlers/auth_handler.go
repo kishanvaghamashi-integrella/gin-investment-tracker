@@ -43,15 +43,15 @@ func NewAuthHandler(svc service.AuthServiceInterface) *AuthHandler {
 }
 
 func (h *AuthHandler) SetRoutes(r *gin.RouterGroup) {
-	users := r.Group("/auth")
+	auth := r.Group("/auth")
 	{
-		users.POST("", h.Signup)
-		users.POST("/email/login", h.Login)
-		users.GET("/google/login", h.GoogleLogin)
-		users.GET("/google/callback", h.GoogleCallback)
-		users.Use(middleware.JWTAuth()).GET("/verify", h.GetUserDetails)
-		users.Use(middleware.JWTAuth()).DELETE("", h.DeleteUser)
-		users.POST("/logout", h.Logout)
+		auth.POST("", h.Signup)
+		auth.POST("/email/login", h.Login)
+		auth.GET("/google/login", h.GoogleLogin)
+		auth.GET("/google/callback", h.GoogleCallback)
+		auth.POST("/logout", h.Logout)
+		auth.Use(middleware.JWTAuth()).GET("/verify", h.GetUserDetails)
+		auth.Use(middleware.JWTAuth()).DELETE("", h.DeleteUser)
 	}
 }
 
@@ -126,8 +126,7 @@ func (h *AuthHandler) Login(c *gin.Context) {
 		return
 	}
 
-	c.SetSameSite(http.SameSiteLaxMode)
-	c.SetCookie("jwt_token", loginResp.Token, 86400, "/", "", false, true)
+	setJwtCookie(c, loginResp.Token)
 
 	slog.Info("user logged in successfully", "handler", "AuthHandler.Login", "userID", loginResp.ID)
 	util.SendResponse(c, http.StatusOK, map[string]any{
@@ -293,8 +292,7 @@ func (h *AuthHandler) GoogleCallback(c *gin.Context) {
 		return
 	}
 
-	c.SetSameSite(http.SameSiteLaxMode)
-	c.SetCookie("jwt_token", loginResp.Token, 86400, "/", "", false, true)
+	setJwtCookie(c, loginResp.Token)
 
 	slog.Info("google login successful", "handler", "AuthHandler.GoogleCallback", "userID", loginResp.ID)
 	c.Redirect(http.StatusSeeOther, "http://localhost:3000/dashboard")
@@ -313,4 +311,9 @@ func (h *AuthHandler) Logout(c *gin.Context) {
 	c.SetCookie("jwt_token", "", -1, "/", "", false, true)
 	slog.Info("user logged out successfully", "handler", "AuthHandler.Logout")
 	util.SendResponse(c, http.StatusOK, map[string]string{"message": "logged out successfully"})
+}
+
+func setJwtCookie(c *gin.Context, token string) {
+	c.SetSameSite(http.SameSiteLaxMode)
+	c.SetCookie("jwt_token", token, 86400, "/", "", false, true)
 }
