@@ -64,6 +64,7 @@ func TestUserService_Create_RepoError(t *testing.T) {
 // ─────────────────────────────────────────────
 
 func TestUserService_Login_Success(t *testing.T) {
+	t.Setenv("JWT_SECRET", "test-secret-key")
 	mockRepo := new(mocks.MockUserRepository)
 	svc := service.NewUserService(mockRepo)
 
@@ -86,12 +87,13 @@ func TestUserService_Login_Success(t *testing.T) {
 
 	mockRepo.On("GetByEmail", context.Background(), req.Email).Return(storedUser, nil)
 
-	user, err := svc.Login(context.Background(), req)
+	resp, err := svc.Login(context.Background(), req)
 
 	require.NoError(t, err)
-	require.NotNil(t, user)
-	assert.Equal(t, storedUser.ID, user.ID)
-	assert.Equal(t, storedUser.Email, user.Email)
+	require.NotNil(t, resp)
+	assert.Equal(t, storedUser.ID, resp.ID)
+	assert.Equal(t, storedUser.Email, resp.Email)
+	assert.NotEmpty(t, resp.Token)
 	mockRepo.AssertExpectations(t)
 }
 
@@ -106,9 +108,9 @@ func TestUserService_Login_EmailNotFound(t *testing.T) {
 
 	mockRepo.On("GetByEmail", context.Background(), req.Email).Return(nil, pgx.ErrNoRows)
 
-	user, err := svc.Login(context.Background(), req)
+	resp, err := svc.Login(context.Background(), req)
 
-	require.Nil(t, user)
+	require.Nil(t, resp)
 	require.Error(t, err)
 	appErr, ok := err.(*util.AppError)
 	require.True(t, ok, "expected *util.AppError")
@@ -138,9 +140,9 @@ func TestUserService_Login_WrongPassword(t *testing.T) {
 
 	mockRepo.On("GetByEmail", context.Background(), req.Email).Return(storedUser, nil)
 
-	user, err := svc.Login(context.Background(), req)
+	resp, err := svc.Login(context.Background(), req)
 
-	require.Nil(t, user)
+	require.Nil(t, resp)
 	require.Error(t, err)
 	appErr, ok := err.(*util.AppError)
 	require.True(t, ok, "expected *util.AppError")
@@ -160,9 +162,9 @@ func TestUserService_Login_RepoInternalError(t *testing.T) {
 
 	mockRepo.On("GetByEmail", context.Background(), req.Email).Return(nil, errors.New("connection refused"))
 
-	user, err := svc.Login(context.Background(), req)
+	resp, err := svc.Login(context.Background(), req)
 
-	require.Nil(t, user)
+	require.Nil(t, resp)
 	require.Error(t, err)
 	appErr, ok := err.(*util.AppError)
 	require.True(t, ok, "expected *util.AppError")

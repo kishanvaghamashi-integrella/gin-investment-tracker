@@ -7,6 +7,8 @@ type User struct {
 	Name         string    `json:"name" db:"name" binding:"required,min=3,max=50"`
 	Email        string    `json:"email" db:"email" binding:"required,email"`
 	PasswordHash string    `json:"-" db:"password_hash" binding:"required,min=6"`
+	GoogleID     *string   ` json:"-"`
+	AuthMethod   string    `json:"auth_method"`
 	IsActive     bool      `json:"is_active" db:"is_active"`
 	CreatedAt    time.Time `json:"created_at" db:"created_at"`
 	UpdatedAt    time.Time `json:"updated_at" db:"updated_at"`
