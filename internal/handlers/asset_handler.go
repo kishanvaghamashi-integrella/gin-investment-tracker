@@ -32,7 +32,7 @@ func NewAssetHandler(svc service.AssetServiceInterface) *AssetHandler {
 // @Failure 400 {object} util.ErrorBody
 // @Failure 500 {object} util.ErrorBody
 // @Router /api/assets/ [post]
-// @Security BearerAuth
+// @Security CookieAuth
 func (h *AssetHandler) Create(c *gin.Context) {
 	slog.Info("request started", "handler", "AssetHandler.Create", "method", c.Request.Method, "path", c.Request.URL.Path)
 
@@ -73,7 +73,7 @@ func (h *AssetHandler) Create(c *gin.Context) {
 // @Failure 404 {object} util.ErrorBody
 // @Failure 500 {object} util.ErrorBody
 // @Router /api/assets/{assetId} [get]
-// @Security BearerAuth
+// @Security CookieAuth
 func (h *AssetHandler) GetByID(c *gin.Context) {
 	slog.Info("request started", "handler", "AssetHandler.GetByID", "method", c.Request.Method, "path", c.Request.URL.Path)
 
@@ -105,7 +105,7 @@ func (h *AssetHandler) GetByID(c *gin.Context) {
 // @Failure 400 {object} util.ErrorBody
 // @Failure 500 {object} util.ErrorBody
 // @Router /api/assets/ [get]
-// @Security BearerAuth
+// @Security CookieAuth
 func (h *AssetHandler) GetAll(c *gin.Context) {
 	slog.Info("request started", "handler", "AssetHandler.GetAll", "method", c.Request.Method, "path", c.Request.URL.Path)
 
@@ -139,7 +139,7 @@ func (h *AssetHandler) GetAll(c *gin.Context) {
 // @Failure 404 {object} util.ErrorBody
 // @Failure 500 {object} util.ErrorBody
 // @Router /api/assets/{assetId} [put]
-// @Security BearerAuth
+// @Security CookieAuth
 func (h *AssetHandler) Update(c *gin.Context) {
 	slog.Info("request started", "handler", "AssetHandler.Update", "method", c.Request.Method, "path", c.Request.URL.Path)
 
@@ -183,7 +183,7 @@ func (h *AssetHandler) Update(c *gin.Context) {
 // @Failure 404 {object} util.ErrorBody
 // @Failure 500 {object} util.ErrorBody
 // @Router /api/assets/{assetId} [delete]
-// @Security BearerAuth
+// @Security CookieAuth
 func (h *AssetHandler) Delete(c *gin.Context) {
 	slog.Info("request started", "handler", "AssetHandler.Delete", "method", c.Request.Method, "path", c.Request.URL.Path)
 

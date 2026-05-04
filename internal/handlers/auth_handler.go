@@ -12,7 +12,6 @@ import (
 	"log/slog"
 	"net/http"
 	"os"
-	"strings"
 
 	"github.com/gin-gonic/gin"
 	"github.com/go-playground/validator/v10"
@@ -44,14 +43,15 @@ func NewAuthHandler(svc service.AuthServiceInterface) *AuthHandler {
 }
 
 func (h *AuthHandler) SetRoutes(r *gin.RouterGroup) {
-	users := r.Group("/auth")
+	auth := r.Group("/auth")
 	{
-		users.POST("", h.Signup)
-		users.POST("/email/login", h.Login)
-		users.GET("/google/login", h.GoogleLogin)
-		users.GET("/google/callback", h.GoogleCallback)
-		users.Use(middleware.JWTAuth()).GET("/verify", h.GetUserDetails)
-		users.Use(middleware.JWTAuth()).DELETE("", h.DeleteUser)
+		auth.POST("", h.Signup)
+		auth.POST("/email/login", h.Login)
+		auth.GET("/google/login", h.GoogleLogin)
+		auth.GET("/google/callback", h.GoogleCallback)
+		auth.POST("/logout", h.Logout)
+		auth.Use(middleware.JWTAuth()).GET("/verify", h.GetUserDetails)
+		auth.Use(middleware.JWTAuth()).DELETE("", h.DeleteUser)
 	}
 }
 
@@ -126,6 +126,8 @@ func (h *AuthHandler) Login(c *gin.Context) {
 		return
 	}
 
+	setJwtCookie(c, loginResp.Token)
+
 	slog.Info("user logged in successfully", "handler", "AuthHandler.Login", "userID", loginResp.ID)
 	util.SendResponse(c, http.StatusOK, map[string]any{
 		"message": "login successful",
@@ -135,7 +137,7 @@ func (h *AuthHandler) Login(c *gin.Context) {
 
 // Verify godoc
 // @Summary Verify token
-// @Description Verify bearer token and return user info
+// @Description Verify JWT cookie and return user info
 // @Tags auth
 // @Produce json
 // @Success 200 {object} map[string]string
@@ -143,7 +145,7 @@ func (h *AuthHandler) Login(c *gin.Context) {
 // @Failure 404 {object} util.ErrorBody
 // @Failure 500 {object} util.ErrorBody
 // @Router /api/auth/verify [get]
-// @Security BearerAuth
+// @Security CookieAuth
 func (h *AuthHandler) GetUserDetails(c *gin.Context) {
 	slog.Info("request started", "handler", "AuthHandler.Verify", "method", c.Request.Method, "path", c.Request.URL.Path)
 
@@ -160,8 +162,6 @@ func (h *AuthHandler) GetUserDetails(c *gin.Context) {
 		return
 	}
 
-	token := strings.TrimPrefix(c.GetHeader("Authorization"), "Bearer ")
-
 	slog.Info("token verified successfully", "handler", "AuthHandler.Verify", "userID", userID)
 	util.SendResponse(c, http.StatusOK, map[string]any{
 		"message": "token is valid",
@@ -169,7 +169,6 @@ func (h *AuthHandler) GetUserDetails(c *gin.Context) {
 			ID:    user.ID,
 			Name:  user.Name,
 			Email: user.Email,
-			Token: token,
 		},
 	})
 }
@@ -184,7 +183,7 @@ func (h *AuthHandler) GetUserDetails(c *gin.Context) {
 // @Failure 404 {object} util.ErrorBody
 // @Failure 500 {object} util.ErrorBody
 // @Router /api/auth [delete]
-// @Security BearerAuth
+// @Security CookieAuth
 func (h *AuthHandler) DeleteUser(c *gin.Context) {
 	slog.Info("request started", "handler", "AuthHandler.Delete", "method", c.Request.Method, "path", c.Request.URL.Path)
 
@@ -222,18 +221,6 @@ func (h *AuthHandler) GoogleLogin(c *gin.Context) {
 	c.Redirect(http.StatusTemporaryRedirect, authURL)
 }
 
-// GoogleCallback godoc
-// @Summary Google OAuth callback
-// @Description Handles the OAuth callback from Google, creates or retrieves the user, and redirects to the frontend with a JWT token
-// @Tags auth
-// @Produce json
-// @Param code query string true "OAuth authorization code returned by Google"
-// @Param state query string true "CSRF state token"
-// @Success 303 {string} string "Redirect to frontend dashboard with token query param"
-// @Failure 400 {object} util.ErrorBody
-// @Failure 401 {object} util.ErrorBody
-// @Failure 500 {object} util.ErrorBody
-// @Router /api/auth/google/callback [get]
 func (h *AuthHandler) GoogleCallback(c *gin.Context) {
 	slog.Info("request started", "handler", "AuthHandler.GoogleCallback", "method", c.Request.Method, "path", c.Request.URL.Path)
 
@@ -305,6 +292,28 @@ func (h *AuthHandler) GoogleCallback(c *gin.Context) {
 		return
 	}
 
+	setJwtCookie(c, loginResp.Token)
+
 	slog.Info("google login successful", "handler", "AuthHandler.GoogleCallback", "userID", loginResp.ID)
-	c.Redirect(http.StatusSeeOther, "http://localhost:3000/dashboard?token="+loginResp.Token)
+	c.Redirect(http.StatusSeeOther, "http://localhost:3000/dashboard")
+}
+
+// Logout godoc
+// @Summary Logout
+// @Description Clears the JWT auth cookie
+// @Tags auth
+// @Produce json
+// @Success 200 {object} map[string]string
+// @Router /api/auth/logout [post]
+func (h *AuthHandler) Logout(c *gin.Context) {
+	slog.Info("request started", "handler", "AuthHandler.Logout", "method", c.Request.Method, "path", c.Request.URL.Path)
+	c.SetSameSite(http.SameSiteLaxMode)
+	c.SetCookie("jwt_token", "", -1, "/", "", false, true)
+	slog.Info("user logged out successfully", "handler", "AuthHandler.Logout")
+	util.SendResponse(c, http.StatusOK, map[string]string{"message": "logged out successfully"})
+}
+
+func setJwtCookie(c *gin.Context, token string) {
+	c.SetSameSite(http.SameSiteLaxMode)
+	c.SetCookie("jwt_token", token, 86400, "/", "", false, true)
 }

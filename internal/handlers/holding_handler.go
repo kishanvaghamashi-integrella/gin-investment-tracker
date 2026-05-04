@@ -34,7 +34,7 @@ func (h *HoldingHandler) SetRoutes(rg *gin.RouterGroup) {
 // @Failure 404 {object} util.ErrorBody
 // @Failure 500 {object} util.ErrorBody
 // @Router /api/holdings [get]
-// @Security BearerAuth
+// @Security CookieAuth
 func (h *HoldingHandler) GetAll(c *gin.Context) {
 	slog.Info("request started", "handler", "HoldingHandler.GetAll", "method", c.Request.Method, "path", c.Request.URL.Path)
 

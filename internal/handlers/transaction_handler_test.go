@@ -73,7 +73,7 @@ func TestTransactionHandler_Create_Success(t *testing.T) {
 	r := setupTransactionRouter(svc)
 	req := httptest.NewRequest(http.MethodPost, "/api/transactions", txnJSONBody(t, validCreateTxnBody()))
 	req.Header.Set("Content-Type", "application/json")
-	req.Header.Set("Authorization", "Bearer "+token)
+	req.AddCookie(&http.Cookie{Name: "jwt_token", Value: token})
 	w := httptest.NewRecorder()
 
 	r.ServeHTTP(w, req)
@@ -90,7 +90,7 @@ func TestTransactionHandler_Create_MalformedJSON(t *testing.T) {
 	r := setupTransactionRouter(svc)
 	req := httptest.NewRequest(http.MethodPost, "/api/transactions", bytes.NewBufferString(`{invalid`))
 	req.Header.Set("Content-Type", "application/json")
-	req.Header.Set("Authorization", "Bearer "+token)
+	req.AddCookie(&http.Cookie{Name: "jwt_token", Value: token})
 	w := httptest.NewRecorder()
 
 	r.ServeHTTP(w, req)
@@ -109,7 +109,7 @@ func TestTransactionHandler_Create_MissingAssetID(t *testing.T) {
 	r := setupTransactionRouter(svc)
 	req := httptest.NewRequest(http.MethodPost, "/api/transactions", txnJSONBody(t, body))
 	req.Header.Set("Content-Type", "application/json")
-	req.Header.Set("Authorization", "Bearer "+token)
+	req.AddCookie(&http.Cookie{Name: "jwt_token", Value: token})
 	w := httptest.NewRecorder()
 
 	r.ServeHTTP(w, req)
@@ -128,7 +128,7 @@ func TestTransactionHandler_Create_MissingTxnType(t *testing.T) {
 	r := setupTransactionRouter(svc)
 	req := httptest.NewRequest(http.MethodPost, "/api/transactions", txnJSONBody(t, body))
 	req.Header.Set("Content-Type", "application/json")
-	req.Header.Set("Authorization", "Bearer "+token)
+	req.AddCookie(&http.Cookie{Name: "jwt_token", Value: token})
 	w := httptest.NewRecorder()
 
 	r.ServeHTTP(w, req)
@@ -147,7 +147,7 @@ func TestTransactionHandler_Create_InvalidTxnType(t *testing.T) {
 	r := setupTransactionRouter(svc)
 	req := httptest.NewRequest(http.MethodPost, "/api/transactions", txnJSONBody(t, body))
 	req.Header.Set("Content-Type", "application/json")
-	req.Header.Set("Authorization", "Bearer "+token)
+	req.AddCookie(&http.Cookie{Name: "jwt_token", Value: token})
 	w := httptest.NewRecorder()
 
 	r.ServeHTTP(w, req)
@@ -167,7 +167,7 @@ func TestTransactionHandler_Create_MissingQuantity(t *testing.T) {
 	r := setupTransactionRouter(svc)
 	req := httptest.NewRequest(http.MethodPost, "/api/transactions", txnJSONBody(t, body))
 	req.Header.Set("Content-Type", "application/json")
-	req.Header.Set("Authorization", "Bearer "+token)
+	req.AddCookie(&http.Cookie{Name: "jwt_token", Value: token})
 	w := httptest.NewRecorder()
 
 	r.ServeHTTP(w, req)
@@ -186,7 +186,7 @@ func TestTransactionHandler_Create_MissingPrice(t *testing.T) {
 	r := setupTransactionRouter(svc)
 	req := httptest.NewRequest(http.MethodPost, "/api/transactions", txnJSONBody(t, body))
 	req.Header.Set("Content-Type", "application/json")
-	req.Header.Set("Authorization", "Bearer "+token)
+	req.AddCookie(&http.Cookie{Name: "jwt_token", Value: token})
 	w := httptest.NewRecorder()
 
 	r.ServeHTTP(w, req)
@@ -205,7 +205,7 @@ func TestTransactionHandler_Create_MissingTxnDate(t *testing.T) {
 	r := setupTransactionRouter(svc)
 	req := httptest.NewRequest(http.MethodPost, "/api/transactions", txnJSONBody(t, body))
 	req.Header.Set("Content-Type", "application/json")
-	req.Header.Set("Authorization", "Bearer "+token)
+	req.AddCookie(&http.Cookie{Name: "jwt_token", Value: token})
 	w := httptest.NewRecorder()
 
 	r.ServeHTTP(w, req)
@@ -223,7 +223,7 @@ func TestTransactionHandler_Create_ServiceBadRequest(t *testing.T) {
 	r := setupTransactionRouter(svc)
 	req := httptest.NewRequest(http.MethodPost, "/api/transactions", txnJSONBody(t, validCreateTxnBody()))
 	req.Header.Set("Content-Type", "application/json")
-	req.Header.Set("Authorization", "Bearer "+token)
+	req.AddCookie(&http.Cookie{Name: "jwt_token", Value: token})
 	w := httptest.NewRecorder()
 
 	r.ServeHTTP(w, req)
@@ -242,7 +242,7 @@ func TestTransactionHandler_Create_ServiceNotFound(t *testing.T) {
 	r := setupTransactionRouter(svc)
 	req := httptest.NewRequest(http.MethodPost, "/api/transactions", txnJSONBody(t, validCreateTxnBody()))
 	req.Header.Set("Content-Type", "application/json")
-	req.Header.Set("Authorization", "Bearer "+token)
+	req.AddCookie(&http.Cookie{Name: "jwt_token", Value: token})
 	w := httptest.NewRecorder()
 
 	r.ServeHTTP(w, req)
@@ -261,7 +261,7 @@ func TestTransactionHandler_Create_ServiceInternalError(t *testing.T) {
 	r := setupTransactionRouter(svc)
 	req := httptest.NewRequest(http.MethodPost, "/api/transactions", txnJSONBody(t, validCreateTxnBody()))
 	req.Header.Set("Content-Type", "application/json")
-	req.Header.Set("Authorization", "Bearer "+token)
+	req.AddCookie(&http.Cookie{Name: "jwt_token", Value: token})
 	w := httptest.NewRecorder()
 
 	r.ServeHTTP(w, req)
@@ -308,7 +308,7 @@ func TestTransactionHandler_Create_InvalidToken(t *testing.T) {
 	r := setupTransactionRouter(svc)
 	req := httptest.NewRequest(http.MethodPost, "/api/transactions", txnJSONBody(t, validCreateTxnBody()))
 	req.Header.Set("Content-Type", "application/json")
-	req.Header.Set("Authorization", "Bearer not.a.valid.token")
+	req.AddCookie(&http.Cookie{Name: "jwt_token", Value: "not.a.valid.token"})
 	w := httptest.NewRecorder()
 
 	r.ServeHTTP(w, req)
@@ -329,7 +329,7 @@ func TestTransactionHandler_GetAllByUserID_Success(t *testing.T) {
 
 	r := setupTransactionRouter(svc)
 	req := httptest.NewRequest(http.MethodGet, "/api/transactions", nil)
-	req.Header.Set("Authorization", "Bearer "+token)
+	req.AddCookie(&http.Cookie{Name: "jwt_token", Value: token})
 	w := httptest.NewRecorder()
 
 	r.ServeHTTP(w, req)
@@ -347,7 +347,7 @@ func TestTransactionHandler_GetAllByUserID_CustomPagination(t *testing.T) {
 
 	r := setupTransactionRouter(svc)
 	req := httptest.NewRequest(http.MethodGet, "/api/transactions?limit=10&offset=20", nil)
-	req.Header.Set("Authorization", "Bearer "+token)
+	req.AddCookie(&http.Cookie{Name: "jwt_token", Value: token})
 	w := httptest.NewRecorder()
 
 	r.ServeHTTP(w, req)
@@ -362,7 +362,7 @@ func TestTransactionHandler_GetAllByUserID_InvalidLimit(t *testing.T) {
 
 	r := setupTransactionRouter(svc)
 	req := httptest.NewRequest(http.MethodGet, "/api/transactions?limit=abc", nil)
-	req.Header.Set("Authorization", "Bearer "+token)
+	req.AddCookie(&http.Cookie{Name: "jwt_token", Value: token})
 	w := httptest.NewRecorder()
 
 	r.ServeHTTP(w, req)
@@ -378,7 +378,7 @@ func TestTransactionHandler_GetAllByUserID_InvalidOffset(t *testing.T) {
 
 	r := setupTransactionRouter(svc)
 	req := httptest.NewRequest(http.MethodGet, "/api/transactions?offset=abc", nil)
-	req.Header.Set("Authorization", "Bearer "+token)
+	req.AddCookie(&http.Cookie{Name: "jwt_token", Value: token})
 	w := httptest.NewRecorder()
 
 	r.ServeHTTP(w, req)
@@ -396,7 +396,7 @@ func TestTransactionHandler_GetAllByUserID_LimitCappedToMax(t *testing.T) {
 
 	r := setupTransactionRouter(svc)
 	req := httptest.NewRequest(http.MethodGet, "/api/transactions?limit=999", nil)
-	req.Header.Set("Authorization", "Bearer "+token)
+	req.AddCookie(&http.Cookie{Name: "jwt_token", Value: token})
 	w := httptest.NewRecorder()
 
 	r.ServeHTTP(w, req)
@@ -413,7 +413,7 @@ func TestTransactionHandler_GetAllByUserID_ServiceNotFound(t *testing.T) {
 
 	r := setupTransactionRouter(svc)
 	req := httptest.NewRequest(http.MethodGet, "/api/transactions", nil)
-	req.Header.Set("Authorization", "Bearer "+token)
+	req.AddCookie(&http.Cookie{Name: "jwt_token", Value: token})
 	w := httptest.NewRecorder()
 
 	r.ServeHTTP(w, req)
@@ -430,7 +430,7 @@ func TestTransactionHandler_GetAllByUserID_ServiceInternalError(t *testing.T) {
 
 	r := setupTransactionRouter(svc)
 	req := httptest.NewRequest(http.MethodGet, "/api/transactions", nil)
-	req.Header.Set("Authorization", "Bearer "+token)
+	req.AddCookie(&http.Cookie{Name: "jwt_token", Value: token})
 	w := httptest.NewRecorder()
 
 	r.ServeHTTP(w, req)
@@ -466,7 +466,7 @@ func TestTransactionHandler_Update_Success(t *testing.T) {
 	body := txnJSONBody(t, map[string]any{"quantity": 20.0})
 	req := httptest.NewRequest(http.MethodPut, "/api/transactions/1", body)
 	req.Header.Set("Content-Type", "application/json")
-	req.Header.Set("Authorization", "Bearer "+token)
+	req.AddCookie(&http.Cookie{Name: "jwt_token", Value: token})
 	w := httptest.NewRecorder()
 
 	r.ServeHTTP(w, req)
@@ -484,7 +484,7 @@ func TestTransactionHandler_Update_NonNumericID(t *testing.T) {
 	body := txnJSONBody(t, map[string]any{"quantity": 20.0})
 	req := httptest.NewRequest(http.MethodPut, "/api/transactions/abc", body)
 	req.Header.Set("Content-Type", "application/json")
-	req.Header.Set("Authorization", "Bearer "+token)
+	req.AddCookie(&http.Cookie{Name: "jwt_token", Value: token})
 	w := httptest.NewRecorder()
 
 	r.ServeHTTP(w, req)
@@ -501,7 +501,7 @@ func TestTransactionHandler_Update_MalformedJSON(t *testing.T) {
 	r := setupTransactionRouter(svc)
 	req := httptest.NewRequest(http.MethodPut, "/api/transactions/1", bytes.NewBufferString(`{invalid`))
 	req.Header.Set("Content-Type", "application/json")
-	req.Header.Set("Authorization", "Bearer "+token)
+	req.AddCookie(&http.Cookie{Name: "jwt_token", Value: token})
 	w := httptest.NewRecorder()
 
 	r.ServeHTTP(w, req)
@@ -518,7 +518,7 @@ func TestTransactionHandler_Update_InvalidTxnType(t *testing.T) {
 	body := txnJSONBody(t, map[string]any{"txn_type": "HOLD"})
 	req := httptest.NewRequest(http.MethodPut, "/api/transactions/1", body)
 	req.Header.Set("Content-Type", "application/json")
-	req.Header.Set("Authorization", "Bearer "+token)
+	req.AddCookie(&http.Cookie{Name: "jwt_token", Value: token})
 	w := httptest.NewRecorder()
 
 	r.ServeHTTP(w, req)
@@ -538,7 +538,7 @@ func TestTransactionHandler_Update_NotFound(t *testing.T) {
 	body := txnJSONBody(t, map[string]any{"quantity": 5.0})
 	req := httptest.NewRequest(http.MethodPut, "/api/transactions/99", body)
 	req.Header.Set("Content-Type", "application/json")
-	req.Header.Set("Authorization", "Bearer "+token)
+	req.AddCookie(&http.Cookie{Name: "jwt_token", Value: token})
 	w := httptest.NewRecorder()
 
 	r.ServeHTTP(w, req)
@@ -558,7 +558,7 @@ func TestTransactionHandler_Update_InternalError(t *testing.T) {
 	body := txnJSONBody(t, map[string]any{"quantity": 5.0})
 	req := httptest.NewRequest(http.MethodPut, "/api/transactions/1", body)
 	req.Header.Set("Content-Type", "application/json")
-	req.Header.Set("Authorization", "Bearer "+token)
+	req.AddCookie(&http.Cookie{Name: "jwt_token", Value: token})
 	w := httptest.NewRecorder()
 
 	r.ServeHTTP(w, req)
@@ -608,7 +608,7 @@ func TestTransactionHandler_Update_InvalidToken(t *testing.T) {
 	body := txnJSONBody(t, map[string]any{"quantity": 5.0})
 	req := httptest.NewRequest(http.MethodPut, "/api/transactions/1", body)
 	req.Header.Set("Content-Type", "application/json")
-	req.Header.Set("Authorization", "Bearer not.a.valid.token")
+	req.AddCookie(&http.Cookie{Name: "jwt_token", Value: "not.a.valid.token"})
 	w := httptest.NewRecorder()
 
 	r.ServeHTTP(w, req)
@@ -628,7 +628,7 @@ func TestTransactionHandler_Delete_Success(t *testing.T) {
 
 	r := setupTransactionRouter(svc)
 	req := httptest.NewRequest(http.MethodDelete, "/api/transactions/1", nil)
-	req.Header.Set("Authorization", "Bearer "+token)
+	req.AddCookie(&http.Cookie{Name: "jwt_token", Value: token})
 	w := httptest.NewRecorder()
 
 	r.ServeHTTP(w, req)
@@ -644,7 +644,7 @@ func TestTransactionHandler_Delete_NonNumericID(t *testing.T) {
 
 	r := setupTransactionRouter(svc)
 	req := httptest.NewRequest(http.MethodDelete, "/api/transactions/abc", nil)
-	req.Header.Set("Authorization", "Bearer "+token)
+	req.AddCookie(&http.Cookie{Name: "jwt_token", Value: token})
 	w := httptest.NewRecorder()
 
 	r.ServeHTTP(w, req)
@@ -662,7 +662,7 @@ func TestTransactionHandler_Delete_NotFound(t *testing.T) {
 
 	r := setupTransactionRouter(svc)
 	req := httptest.NewRequest(http.MethodDelete, "/api/transactions/99", nil)
-	req.Header.Set("Authorization", "Bearer "+token)
+	req.AddCookie(&http.Cookie{Name: "jwt_token", Value: token})
 	w := httptest.NewRecorder()
 
 	r.ServeHTTP(w, req)
@@ -680,7 +680,7 @@ func TestTransactionHandler_Delete_InternalError(t *testing.T) {
 
 	r := setupTransactionRouter(svc)
 	req := httptest.NewRequest(http.MethodDelete, "/api/transactions/1", nil)
-	req.Header.Set("Authorization", "Bearer "+token)
+	req.AddCookie(&http.Cookie{Name: "jwt_token", Value: token})
 	w := httptest.NewRecorder()
 
 	r.ServeHTTP(w, req)
@@ -724,7 +724,7 @@ func TestTransactionHandler_Delete_InvalidToken(t *testing.T) {
 
 	r := setupTransactionRouter(svc)
 	req := httptest.NewRequest(http.MethodDelete, "/api/transactions/1", nil)
-	req.Header.Set("Authorization", "Bearer not.a.valid.token")
+	req.AddCookie(&http.Cookie{Name: "jwt_token", Value: "not.a.valid.token"})
 	w := httptest.NewRecorder()
 
 	r.ServeHTTP(w, req)

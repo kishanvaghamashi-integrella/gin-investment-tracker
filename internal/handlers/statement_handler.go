@@ -35,7 +35,7 @@ func (h *StatementHandler) SetRoutes(rg *gin.RouterGroup) {
 // @Failure 400 {object} util.ErrorBody
 // @Failure 401 {object} util.ErrorBody
 // @Router /api/cas-statement [post]
-// @Security BearerAuth
+// @Security CookieAuth
 func (h *StatementHandler) ProcessCasStatement(c *gin.Context) {
 	filePassword := c.PostForm("password")
 

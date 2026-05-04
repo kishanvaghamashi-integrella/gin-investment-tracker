@@ -31,7 +31,7 @@ func (h *DashboardHandler) SetRoutes(rg *gin.RouterGroup) {
 // @Failure 400 {object} util.ErrorBody
 // @Failure 500 {object} util.ErrorBody
 // @Router /api/dashboard [get]
-// @Security BearerAuth
+// @Security CookieAuth
 func (h *DashboardHandler) GetDashboardData(c *gin.Context) {
 	slog.Info("request started", "handler", "DashboardHandler.GetDashboardData", "method", c.Request.Method, "path", c.Request.URL.Path)
 

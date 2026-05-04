@@ -77,7 +77,7 @@ func TestHoldingHandler_GetAll_InvalidToken(t *testing.T) {
 	r := setupHoldingRouter(svc)
 
 	req := httptest.NewRequest(http.MethodGet, "/api/holdings", nil)
-	req.Header.Set("Authorization", "Bearer not.a.valid.token")
+	req.AddCookie(&http.Cookie{Name: "jwt_token", Value: "not.a.valid.token"})
 	w := httptest.NewRecorder()
 
 	r.ServeHTTP(w, req)
@@ -96,7 +96,7 @@ func TestHoldingHandler_GetAll_Success(t *testing.T) {
 
 	r := setupHoldingRouter(svc)
 	req := httptest.NewRequest(http.MethodGet, "/api/holdings", nil)
-	req.Header.Set("Authorization", "Bearer "+token)
+	req.AddCookie(&http.Cookie{Name: "jwt_token", Value: token})
 	w := httptest.NewRecorder()
 
 	r.ServeHTTP(w, req)
@@ -114,7 +114,7 @@ func TestHoldingHandler_GetAll_UserNotFound(t *testing.T) {
 
 	r := setupHoldingRouter(svc)
 	req := httptest.NewRequest(http.MethodGet, "/api/holdings", nil)
-	req.Header.Set("Authorization", "Bearer "+token)
+	req.AddCookie(&http.Cookie{Name: "jwt_token", Value: token})
 	w := httptest.NewRecorder()
 
 	r.ServeHTTP(w, req)
@@ -131,7 +131,7 @@ func TestHoldingHandler_GetAll_InternalError(t *testing.T) {
 
 	r := setupHoldingRouter(svc)
 	req := httptest.NewRequest(http.MethodGet, "/api/holdings", nil)
-	req.Header.Set("Authorization", "Bearer "+token)
+	req.AddCookie(&http.Cookie{Name: "jwt_token", Value: token})
 	w := httptest.NewRecorder()
 
 	r.ServeHTTP(w, req)
@@ -146,7 +146,7 @@ func TestHoldingHandler_GetAll_InvalidLimitParam(t *testing.T) {
 
 	r := setupHoldingRouter(svc)
 	req := httptest.NewRequest(http.MethodGet, "/api/holdings?limit=abc", nil)
-	req.Header.Set("Authorization", "Bearer "+token)
+	req.AddCookie(&http.Cookie{Name: "jwt_token", Value: token})
 	w := httptest.NewRecorder()
 
 	r.ServeHTTP(w, req)
@@ -161,7 +161,7 @@ func TestHoldingHandler_GetAll_InvalidOffsetParam(t *testing.T) {
 
 	r := setupHoldingRouter(svc)
 	req := httptest.NewRequest(http.MethodGet, "/api/holdings?offset=-1", nil)
-	req.Header.Set("Authorization", "Bearer "+token)
+	req.AddCookie(&http.Cookie{Name: "jwt_token", Value: token})
 	w := httptest.NewRecorder()
 
 	r.ServeHTTP(w, req)
@@ -178,7 +178,7 @@ func TestHoldingHandler_GetAll_WithPaginationParams(t *testing.T) {
 
 	r := setupHoldingRouter(svc)
 	req := httptest.NewRequest(http.MethodGet, "/api/holdings?limit=10&offset=20", nil)
-	req.Header.Set("Authorization", "Bearer "+token)
+	req.AddCookie(&http.Cookie{Name: "jwt_token", Value: token})
 	w := httptest.NewRecorder()
 
 	r.ServeHTTP(w, req)

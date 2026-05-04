@@ -15,7 +15,7 @@ type LoginResponse struct {
 	ID    int64  `json:"id,omitempty"`
 	Name  string `json:"name,omitempty"`
 	Email string `json:"email,omitempty"`
-	Token string `json:"token,omitempty"`
+	Token string `json:"-"`
 }
 
 type GoogleUserInfo struct {

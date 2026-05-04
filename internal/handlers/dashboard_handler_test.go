@@ -73,7 +73,7 @@ func TestDashboardHandler_GetDashboardData_InvalidToken(t *testing.T) {
 	r := setupDashboardRouter(svc)
 
 	req := httptest.NewRequest(http.MethodGet, "/api/dashboard", nil)
-	req.Header.Set("Authorization", "Bearer not.a.valid.token")
+	req.AddCookie(&http.Cookie{Name: "jwt_token", Value: "not.a.valid.token"})
 	w := httptest.NewRecorder()
 
 	r.ServeHTTP(w, req)
@@ -90,7 +90,7 @@ func TestDashboardHandler_GetDashboardData_ServiceInternalError(t *testing.T) {
 
 	r := setupDashboardRouter(svc)
 	req := httptest.NewRequest(http.MethodGet, "/api/dashboard", nil)
-	req.Header.Set("Authorization", "Bearer "+token)
+	req.AddCookie(&http.Cookie{Name: "jwt_token", Value: token})
 	w := httptest.NewRecorder()
 
 	r.ServeHTTP(w, req)
@@ -139,7 +139,7 @@ func TestDashboardHandler_GetDashboardData_Success(t *testing.T) {
 
 	r := setupDashboardRouter(svc)
 	req := httptest.NewRequest(http.MethodGet, "/api/dashboard", nil)
-	req.Header.Set("Authorization", "Bearer "+token)
+	req.AddCookie(&http.Cookie{Name: "jwt_token", Value: token})
 	w := httptest.NewRecorder()
 
 	r.ServeHTTP(w, req)
@@ -158,7 +158,7 @@ func TestDashboardHandler_GetDashboardData_Success_EmptyData(t *testing.T) {
 
 	r := setupDashboardRouter(svc)
 	req := httptest.NewRequest(http.MethodGet, "/api/dashboard", nil)
-	req.Header.Set("Authorization", "Bearer "+token)
+	req.AddCookie(&http.Cookie{Name: "jwt_token", Value: token})
 	w := httptest.NewRecorder()
 
 	r.ServeHTTP(w, req)

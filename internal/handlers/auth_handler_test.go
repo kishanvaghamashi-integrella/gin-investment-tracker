@@ -25,7 +25,7 @@ func init() {
 }
 
 // setupRouter wires up a handler with the given mock service and registers
-// all four routes, mirroring routes/routes.go.
+// all routes, mirroring routes/routes.go.
 func setupRouter(svc *mocks.MockUserService) *gin.Engine {
 	r := gin.New()
 	h := handler.NewAuthHandler(svc)
@@ -33,6 +33,7 @@ func setupRouter(svc *mocks.MockUserService) *gin.Engine {
 	users := api.Group("/users")
 	users.POST("", h.Signup)
 	users.POST("/login", h.Login)
+	users.POST("/logout", h.Logout)
 	users.GET("/verify", middleware.JWTAuth(), h.GetUserDetails)
 	users.DELETE("", middleware.JWTAuth(), h.DeleteUser)
 	return r
@@ -53,6 +54,12 @@ func validToken(t *testing.T, userID int64, email string) string {
 	token, err := util.GenerateToken(userID, email)
 	require.NoError(t, err)
 	return token
+}
+
+// authCookie returns a jwt_token cookie for use in protected test requests.
+func authCookie(t *testing.T, userID int64, email string) *http.Cookie {
+	t.Helper()
+	return &http.Cookie{Name: "jwt_token", Value: validToken(t, userID, email)}
 }
 
 // ─────────────────────────────────────────────
@@ -252,12 +259,15 @@ func TestUserHandler_Create_ServiceInternalError(t *testing.T) {
 
 func TestUserHandler_Login_Success(t *testing.T) {
 	t.Setenv("JWT_SECRET", "test-secret-key")
+	token, err := util.GenerateToken(1, "alice@example.com")
+	require.NoError(t, err)
+
 	svc := new(mocks.MockUserService)
 	svc.On("Login", mock.Anything, mock.Anything).Return(&dto.LoginResponse{
 		ID:    1,
 		Name:  "Alice",
 		Email: "alice@example.com",
-		Token: "mocked-token",
+		Token: token,
 	}, nil)
 
 	r := setupRouter(svc)
@@ -272,12 +282,24 @@ func TestUserHandler_Login_Success(t *testing.T) {
 	r.ServeHTTP(w, req)
 
 	assert.Equal(t, http.StatusOK, w.Code)
+
 	var resp map[string]any
 	require.NoError(t, json.Unmarshal(w.Body.Bytes(), &resp))
 	assert.Equal(t, "login successful", resp["message"])
 	userField, ok := resp["user"].(map[string]any)
 	require.True(t, ok, "user field must be an object")
-	assert.NotEmpty(t, userField["token"], "token must be present in the response")
+	assert.Empty(t, userField["token"], "token must not be present in the JSON body")
+
+	var jwtCookie *http.Cookie
+	for _, c := range w.Result().Cookies() {
+		if c.Name == "jwt_token" {
+			jwtCookie = c
+			break
+		}
+	}
+	require.NotNil(t, jwtCookie, "jwt_token cookie must be set")
+	assert.NotEmpty(t, jwtCookie.Value)
+	assert.True(t, jwtCookie.HttpOnly)
 	svc.AssertExpectations(t)
 }
 
@@ -360,11 +382,10 @@ func TestUserHandler_Login_ServiceInternalError(t *testing.T) {
 }
 
 // ─────────────────────────────────────────────
-// GET /api/users/verify — Verify (JWT protected)
+// GET /api/users/verify — Verify (JWT cookie protected)
 // ─────────────────────────────────────────────
 
 func TestUserHandler_Verify_Success(t *testing.T) {
-	token := validToken(t, 1, "alice@example.com")
 	svc := new(mocks.MockUserService)
 	svc.On("GetByID", mock.Anything, int64(1)).Return(&model.User{
 		ID:    1,
@@ -374,7 +395,7 @@ func TestUserHandler_Verify_Success(t *testing.T) {
 
 	r := setupRouter(svc)
 	req := httptest.NewRequest(http.MethodGet, "/api/users/verify", nil)
-	req.Header.Set("Authorization", "Bearer "+token)
+	req.AddCookie(authCookie(t, 1, "alice@example.com"))
 	w := httptest.NewRecorder()
 
 	r.ServeHTTP(w, req)
@@ -386,10 +407,11 @@ func TestUserHandler_Verify_Success(t *testing.T) {
 	userField, ok := resp["user"].(map[string]any)
 	require.True(t, ok)
 	assert.Equal(t, "alice@example.com", userField["email"])
+	assert.Empty(t, userField["token"], "token must not be present in the JSON body")
 	svc.AssertExpectations(t)
 }
 
-func TestUserHandler_Verify_NoAuthHeader(t *testing.T) {
+func TestUserHandler_Verify_NoCookie(t *testing.T) {
 	t.Setenv("JWT_SECRET", "test-secret-key")
 	svc := new(mocks.MockUserService)
 	r := setupRouter(svc)
@@ -400,23 +422,7 @@ func TestUserHandler_Verify_NoAuthHeader(t *testing.T) {
 	r.ServeHTTP(w, req)
 
 	assert.Equal(t, http.StatusUnauthorized, w.Code)
-	assert.Contains(t, w.Body.String(), "missing authorization header")
-	svc.AssertNotCalled(t, "GetByID")
-}
-
-func TestUserHandler_Verify_NonBearerFormat(t *testing.T) {
-	t.Setenv("JWT_SECRET", "test-secret-key")
-	svc := new(mocks.MockUserService)
-	r := setupRouter(svc)
-
-	req := httptest.NewRequest(http.MethodGet, "/api/users/verify", nil)
-	req.Header.Set("Authorization", "Token some-random-token")
-	w := httptest.NewRecorder()
-
-	r.ServeHTTP(w, req)
-
-	assert.Equal(t, http.StatusUnauthorized, w.Code)
-	assert.Contains(t, w.Body.String(), "invalid authorization header format")
+	assert.Contains(t, w.Body.String(), "missing auth cookie")
 	svc.AssertNotCalled(t, "GetByID")
 }
 
@@ -426,7 +432,7 @@ func TestUserHandler_Verify_InvalidToken(t *testing.T) {
 	r := setupRouter(svc)
 
 	req := httptest.NewRequest(http.MethodGet, "/api/users/verify", nil)
-	req.Header.Set("Authorization", "Bearer this.is.not.a.valid.jwt")
+	req.AddCookie(&http.Cookie{Name: "jwt_token", Value: "this.is.not.a.valid.jwt"})
 	w := httptest.NewRecorder()
 
 	r.ServeHTTP(w, req)
@@ -436,13 +442,12 @@ func TestUserHandler_Verify_InvalidToken(t *testing.T) {
 }
 
 func TestUserHandler_Verify_UserNotFound(t *testing.T) {
-	token := validToken(t, 99, "ghost@example.com")
 	svc := new(mocks.MockUserService)
 	svc.On("GetByID", mock.Anything, int64(99)).Return(nil, util.NewNotFoundError("User not found"))
 
 	r := setupRouter(svc)
 	req := httptest.NewRequest(http.MethodGet, "/api/users/verify", nil)
-	req.Header.Set("Authorization", "Bearer "+token)
+	req.AddCookie(authCookie(t, 99, "ghost@example.com"))
 	w := httptest.NewRecorder()
 
 	r.ServeHTTP(w, req)
@@ -453,13 +458,12 @@ func TestUserHandler_Verify_UserNotFound(t *testing.T) {
 }
 
 func TestUserHandler_Verify_ServiceInternalError(t *testing.T) {
-	token := validToken(t, 1, "alice@example.com")
 	svc := new(mocks.MockUserService)
 	svc.On("GetByID", mock.Anything, int64(1)).Return(nil, util.NewInternalError("db failure"))
 
 	r := setupRouter(svc)
 	req := httptest.NewRequest(http.MethodGet, "/api/users/verify", nil)
-	req.Header.Set("Authorization", "Bearer "+token)
+	req.AddCookie(authCookie(t, 1, "alice@example.com"))
 	w := httptest.NewRecorder()
 
 	r.ServeHTTP(w, req)
@@ -469,17 +473,16 @@ func TestUserHandler_Verify_ServiceInternalError(t *testing.T) {
 }
 
 // ─────────────────────────────────────────────
-// DELETE /api/users — Delete (JWT protected)
+// DELETE /api/users — Delete (JWT cookie protected)
 // ─────────────────────────────────────────────
 
 func TestUserHandler_Delete_Success(t *testing.T) {
-	token := validToken(t, 1, "alice@example.com")
 	svc := new(mocks.MockUserService)
 	svc.On("Delete", mock.Anything, int64(1)).Return(nil)
 
 	r := setupRouter(svc)
 	req := httptest.NewRequest(http.MethodDelete, "/api/users", nil)
-	req.Header.Set("Authorization", "Bearer "+token)
+	req.AddCookie(authCookie(t, 1, "alice@example.com"))
 	w := httptest.NewRecorder()
 
 	r.ServeHTTP(w, req)
@@ -489,7 +492,7 @@ func TestUserHandler_Delete_Success(t *testing.T) {
 	svc.AssertExpectations(t)
 }
 
-func TestUserHandler_Delete_NoAuthHeader(t *testing.T) {
+func TestUserHandler_Delete_NoCookie(t *testing.T) {
 	t.Setenv("JWT_SECRET", "test-secret-key")
 	svc := new(mocks.MockUserService)
 	r := setupRouter(svc)
@@ -500,7 +503,7 @@ func TestUserHandler_Delete_NoAuthHeader(t *testing.T) {
 	r.ServeHTTP(w, req)
 
 	assert.Equal(t, http.StatusUnauthorized, w.Code)
-	assert.Contains(t, w.Body.String(), "missing authorization header")
+	assert.Contains(t, w.Body.String(), "missing auth cookie")
 	svc.AssertNotCalled(t, "Delete")
 }
 
@@ -510,7 +513,7 @@ func TestUserHandler_Delete_InvalidToken(t *testing.T) {
 	r := setupRouter(svc)
 
 	req := httptest.NewRequest(http.MethodDelete, "/api/users", nil)
-	req.Header.Set("Authorization", "Bearer completely.wrong.token")
+	req.AddCookie(&http.Cookie{Name: "jwt_token", Value: "completely.wrong.token"})
 	w := httptest.NewRecorder()
 
 	r.ServeHTTP(w, req)
@@ -520,13 +523,12 @@ func TestUserHandler_Delete_InvalidToken(t *testing.T) {
 }
 
 func TestUserHandler_Delete_UserNotFound(t *testing.T) {
-	token := validToken(t, 99, "ghost@example.com")
 	svc := new(mocks.MockUserService)
 	svc.On("Delete", mock.Anything, int64(99)).Return(util.NewNotFoundError("no user found with id 99"))
 
 	r := setupRouter(svc)
 	req := httptest.NewRequest(http.MethodDelete, "/api/users", nil)
-	req.Header.Set("Authorization", "Bearer "+token)
+	req.AddCookie(authCookie(t, 99, "ghost@example.com"))
 	w := httptest.NewRecorder()
 
 	r.ServeHTTP(w, req)
@@ -537,17 +539,44 @@ func TestUserHandler_Delete_UserNotFound(t *testing.T) {
 }
 
 func TestUserHandler_Delete_ServiceInternalError(t *testing.T) {
-	token := validToken(t, 1, "alice@example.com")
 	svc := new(mocks.MockUserService)
 	svc.On("Delete", mock.Anything, int64(1)).Return(util.NewInternalError("db failure"))
 
 	r := setupRouter(svc)
 	req := httptest.NewRequest(http.MethodDelete, "/api/users", nil)
-	req.Header.Set("Authorization", "Bearer "+token)
+	req.AddCookie(authCookie(t, 1, "alice@example.com"))
 	w := httptest.NewRecorder()
 
 	r.ServeHTTP(w, req)
 
 	assert.Equal(t, http.StatusInternalServerError, w.Code)
 	svc.AssertExpectations(t)
+}
+
+// ─────────────────────────────────────────────
+// POST /api/users/logout — Logout
+// ─────────────────────────────────────────────
+
+func TestUserHandler_Logout_Success(t *testing.T) {
+	svc := new(mocks.MockUserService)
+	r := setupRouter(svc)
+
+	req := httptest.NewRequest(http.MethodPost, "/api/users/logout", nil)
+	w := httptest.NewRecorder()
+
+	r.ServeHTTP(w, req)
+
+	assert.Equal(t, http.StatusOK, w.Code)
+	assert.Contains(t, w.Body.String(), "logged out successfully")
+
+	var cleared *http.Cookie
+	for _, c := range w.Result().Cookies() {
+		if c.Name == "jwt_token" {
+			cleared = c
+			break
+		}
+	}
+	require.NotNil(t, cleared, "jwt_token cookie must be present in response to clear it")
+	assert.True(t, cleared.MaxAge < 0, "cookie MaxAge must be negative to clear it")
+	assert.Empty(t, svc.Calls)
 }
