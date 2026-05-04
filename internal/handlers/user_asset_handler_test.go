@@ -60,7 +60,7 @@ func TestUserAssetHandler_Create_Success(t *testing.T) {
 	r := setupUserAssetRouter(svc)
 	req := httptest.NewRequest(http.MethodPost, "/api/user-assets", userAssetJSONBody(t, map[string]any{"asset_id": 5}))
 	req.Header.Set("Content-Type", "application/json")
-	req.Header.Set("Authorization", "Bearer "+token)
+	req.AddCookie(&http.Cookie{Name: "jwt_token", Value: token})
 	w := httptest.NewRecorder()
 
 	r.ServeHTTP(w, req)
@@ -77,7 +77,7 @@ func TestUserAssetHandler_Create_MalformedJSON(t *testing.T) {
 	r := setupUserAssetRouter(svc)
 	req := httptest.NewRequest(http.MethodPost, "/api/user-assets", bytes.NewBufferString(`{invalid`))
 	req.Header.Set("Content-Type", "application/json")
-	req.Header.Set("Authorization", "Bearer "+token)
+	req.AddCookie(&http.Cookie{Name: "jwt_token", Value: token})
 	w := httptest.NewRecorder()
 
 	r.ServeHTTP(w, req)
@@ -93,7 +93,7 @@ func TestUserAssetHandler_Create_MissingAssetID(t *testing.T) {
 	r := setupUserAssetRouter(svc)
 	req := httptest.NewRequest(http.MethodPost, "/api/user-assets", userAssetJSONBody(t, map[string]any{}))
 	req.Header.Set("Content-Type", "application/json")
-	req.Header.Set("Authorization", "Bearer "+token)
+	req.AddCookie(&http.Cookie{Name: "jwt_token", Value: token})
 	w := httptest.NewRecorder()
 
 	r.ServeHTTP(w, req)
@@ -109,7 +109,7 @@ func TestUserAssetHandler_Create_AssetIDZero(t *testing.T) {
 	r := setupUserAssetRouter(svc)
 	req := httptest.NewRequest(http.MethodPost, "/api/user-assets", userAssetJSONBody(t, map[string]any{"asset_id": 0}))
 	req.Header.Set("Content-Type", "application/json")
-	req.Header.Set("Authorization", "Bearer "+token)
+	req.AddCookie(&http.Cookie{Name: "jwt_token", Value: token})
 	w := httptest.NewRecorder()
 
 	r.ServeHTTP(w, req)
@@ -127,7 +127,7 @@ func TestUserAssetHandler_Create_ServiceBadRequest(t *testing.T) {
 	r := setupUserAssetRouter(svc)
 	req := httptest.NewRequest(http.MethodPost, "/api/user-assets", userAssetJSONBody(t, map[string]any{"asset_id": 5}))
 	req.Header.Set("Content-Type", "application/json")
-	req.Header.Set("Authorization", "Bearer "+token)
+	req.AddCookie(&http.Cookie{Name: "jwt_token", Value: token})
 	w := httptest.NewRecorder()
 
 	r.ServeHTTP(w, req)
@@ -146,7 +146,7 @@ func TestUserAssetHandler_Create_ServiceNotFound(t *testing.T) {
 	r := setupUserAssetRouter(svc)
 	req := httptest.NewRequest(http.MethodPost, "/api/user-assets", userAssetJSONBody(t, map[string]any{"asset_id": 99}))
 	req.Header.Set("Content-Type", "application/json")
-	req.Header.Set("Authorization", "Bearer "+token)
+	req.AddCookie(&http.Cookie{Name: "jwt_token", Value: token})
 	w := httptest.NewRecorder()
 
 	r.ServeHTTP(w, req)
@@ -164,7 +164,7 @@ func TestUserAssetHandler_Create_ServiceInternalError(t *testing.T) {
 	r := setupUserAssetRouter(svc)
 	req := httptest.NewRequest(http.MethodPost, "/api/user-assets", userAssetJSONBody(t, map[string]any{"asset_id": 5}))
 	req.Header.Set("Content-Type", "application/json")
-	req.Header.Set("Authorization", "Bearer "+token)
+	req.AddCookie(&http.Cookie{Name: "jwt_token", Value: token})
 	w := httptest.NewRecorder()
 
 	r.ServeHTTP(w, req)
@@ -210,7 +210,7 @@ func TestUserAssetHandler_Create_InvalidToken(t *testing.T) {
 	r := setupUserAssetRouter(svc)
 	req := httptest.NewRequest(http.MethodPost, "/api/user-assets", userAssetJSONBody(t, map[string]any{"asset_id": 5}))
 	req.Header.Set("Content-Type", "application/json")
-	req.Header.Set("Authorization", "Bearer invalidtoken")
+	req.AddCookie(&http.Cookie{Name: "jwt_token", Value: "invalidtoken"})
 	w := httptest.NewRecorder()
 
 	r.ServeHTTP(w, req)
@@ -231,7 +231,7 @@ func TestUserAssetHandler_GetByUserID_Success(t *testing.T) {
 
 	r := setupUserAssetRouter(svc)
 	req := httptest.NewRequest(http.MethodGet, "/api/user-assets", nil)
-	req.Header.Set("Authorization", "Bearer "+token)
+	req.AddCookie(&http.Cookie{Name: "jwt_token", Value: token})
 	w := httptest.NewRecorder()
 
 	r.ServeHTTP(w, req)
@@ -261,7 +261,7 @@ func TestUserAssetHandler_GetByUserID_ServiceNotFound(t *testing.T) {
 
 	r := setupUserAssetRouter(svc)
 	req := httptest.NewRequest(http.MethodGet, "/api/user-assets", nil)
-	req.Header.Set("Authorization", "Bearer "+token)
+	req.AddCookie(&http.Cookie{Name: "jwt_token", Value: token})
 	w := httptest.NewRecorder()
 
 	r.ServeHTTP(w, req)
@@ -278,7 +278,7 @@ func TestUserAssetHandler_GetByUserID_ServiceInternalError(t *testing.T) {
 
 	r := setupUserAssetRouter(svc)
 	req := httptest.NewRequest(http.MethodGet, "/api/user-assets", nil)
-	req.Header.Set("Authorization", "Bearer "+token)
+	req.AddCookie(&http.Cookie{Name: "jwt_token", Value: token})
 	w := httptest.NewRecorder()
 
 	r.ServeHTTP(w, req)
@@ -298,7 +298,7 @@ func TestUserAssetHandler_Delete_Success(t *testing.T) {
 
 	r := setupUserAssetRouter(svc)
 	req := httptest.NewRequest(http.MethodDelete, "/api/user-assets/10", nil)
-	req.Header.Set("Authorization", "Bearer "+token)
+	req.AddCookie(&http.Cookie{Name: "jwt_token", Value: token})
 	w := httptest.NewRecorder()
 
 	r.ServeHTTP(w, req)
@@ -327,7 +327,7 @@ func TestUserAssetHandler_Delete_InvalidUserAssetID(t *testing.T) {
 
 	r := setupUserAssetRouter(svc)
 	req := httptest.NewRequest(http.MethodDelete, "/api/user-assets/abc", nil)
-	req.Header.Set("Authorization", "Bearer "+token)
+	req.AddCookie(&http.Cookie{Name: "jwt_token", Value: token})
 	w := httptest.NewRecorder()
 
 	r.ServeHTTP(w, req)
@@ -345,7 +345,7 @@ func TestUserAssetHandler_Delete_ServiceNotFound(t *testing.T) {
 
 	r := setupUserAssetRouter(svc)
 	req := httptest.NewRequest(http.MethodDelete, "/api/user-assets/10", nil)
-	req.Header.Set("Authorization", "Bearer "+token)
+	req.AddCookie(&http.Cookie{Name: "jwt_token", Value: token})
 	w := httptest.NewRecorder()
 
 	r.ServeHTTP(w, req)
@@ -362,7 +362,7 @@ func TestUserAssetHandler_Delete_ServiceInternalError(t *testing.T) {
 
 	r := setupUserAssetRouter(svc)
 	req := httptest.NewRequest(http.MethodDelete, "/api/user-assets/10", nil)
-	req.Header.Set("Authorization", "Bearer "+token)
+	req.AddCookie(&http.Cookie{Name: "jwt_token", Value: token})
 	w := httptest.NewRecorder()
 
 	r.ServeHTTP(w, req)

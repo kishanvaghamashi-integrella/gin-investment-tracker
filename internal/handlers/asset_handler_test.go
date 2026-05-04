@@ -73,7 +73,7 @@ func TestAssetHandler_Create_Success(t *testing.T) {
 	r := setupAssetRouter(svc)
 	req := httptest.NewRequest(http.MethodPost, "/api/assets", assetJSONBody(t, validCreateAssetBody()))
 	req.Header.Set("Content-Type", "application/json")
-	req.Header.Set("Authorization", "Bearer "+token)
+	req.AddCookie(&http.Cookie{Name: "jwt_token", Value: token})
 	w := httptest.NewRecorder()
 
 	r.ServeHTTP(w, req)
@@ -90,7 +90,7 @@ func TestAssetHandler_Create_MalformedJSON(t *testing.T) {
 	r := setupAssetRouter(svc)
 	req := httptest.NewRequest(http.MethodPost, "/api/assets", bytes.NewBufferString(`{invalid`))
 	req.Header.Set("Content-Type", "application/json")
-	req.Header.Set("Authorization", "Bearer "+token)
+	req.AddCookie(&http.Cookie{Name: "jwt_token", Value: token})
 	w := httptest.NewRecorder()
 
 	r.ServeHTTP(w, req)
@@ -109,7 +109,7 @@ func TestAssetHandler_Create_MissingSymbol(t *testing.T) {
 	r := setupAssetRouter(svc)
 	req := httptest.NewRequest(http.MethodPost, "/api/assets", assetJSONBody(t, body))
 	req.Header.Set("Content-Type", "application/json")
-	req.Header.Set("Authorization", "Bearer "+token)
+	req.AddCookie(&http.Cookie{Name: "jwt_token", Value: token})
 	w := httptest.NewRecorder()
 
 	r.ServeHTTP(w, req)
@@ -128,7 +128,7 @@ func TestAssetHandler_Create_MissingName(t *testing.T) {
 	r := setupAssetRouter(svc)
 	req := httptest.NewRequest(http.MethodPost, "/api/assets", assetJSONBody(t, body))
 	req.Header.Set("Content-Type", "application/json")
-	req.Header.Set("Authorization", "Bearer "+token)
+	req.AddCookie(&http.Cookie{Name: "jwt_token", Value: token})
 	w := httptest.NewRecorder()
 
 	r.ServeHTTP(w, req)
@@ -147,7 +147,7 @@ func TestAssetHandler_Create_MissingInstrumentType(t *testing.T) {
 	r := setupAssetRouter(svc)
 	req := httptest.NewRequest(http.MethodPost, "/api/assets", assetJSONBody(t, body))
 	req.Header.Set("Content-Type", "application/json")
-	req.Header.Set("Authorization", "Bearer "+token)
+	req.AddCookie(&http.Cookie{Name: "jwt_token", Value: token})
 	w := httptest.NewRecorder()
 
 	r.ServeHTTP(w, req)
@@ -166,7 +166,7 @@ func TestAssetHandler_Create_MissingISIN(t *testing.T) {
 	r := setupAssetRouter(svc)
 	req := httptest.NewRequest(http.MethodPost, "/api/assets", assetJSONBody(t, body))
 	req.Header.Set("Content-Type", "application/json")
-	req.Header.Set("Authorization", "Bearer "+token)
+	req.AddCookie(&http.Cookie{Name: "jwt_token", Value: token})
 	w := httptest.NewRecorder()
 
 	r.ServeHTTP(w, req)
@@ -185,7 +185,7 @@ func TestAssetHandler_Create_MissingExchange(t *testing.T) {
 	r := setupAssetRouter(svc)
 	req := httptest.NewRequest(http.MethodPost, "/api/assets", assetJSONBody(t, body))
 	req.Header.Set("Content-Type", "application/json")
-	req.Header.Set("Authorization", "Bearer "+token)
+	req.AddCookie(&http.Cookie{Name: "jwt_token", Value: token})
 	w := httptest.NewRecorder()
 
 	r.ServeHTTP(w, req)
@@ -204,7 +204,7 @@ func TestAssetHandler_Create_InvalidInstrumentType(t *testing.T) {
 	r := setupAssetRouter(svc)
 	req := httptest.NewRequest(http.MethodPost, "/api/assets", assetJSONBody(t, body))
 	req.Header.Set("Content-Type", "application/json")
-	req.Header.Set("Authorization", "Bearer "+token)
+	req.AddCookie(&http.Cookie{Name: "jwt_token", Value: token})
 	w := httptest.NewRecorder()
 
 	r.ServeHTTP(w, req)
@@ -223,7 +223,7 @@ func TestAssetHandler_Create_ServiceBadRequest(t *testing.T) {
 	r := setupAssetRouter(svc)
 	req := httptest.NewRequest(http.MethodPost, "/api/assets", assetJSONBody(t, validCreateAssetBody()))
 	req.Header.Set("Content-Type", "application/json")
-	req.Header.Set("Authorization", "Bearer "+token)
+	req.AddCookie(&http.Cookie{Name: "jwt_token", Value: token})
 	w := httptest.NewRecorder()
 
 	r.ServeHTTP(w, req)
@@ -242,7 +242,7 @@ func TestAssetHandler_Create_ServiceInternalError(t *testing.T) {
 	r := setupAssetRouter(svc)
 	req := httptest.NewRequest(http.MethodPost, "/api/assets", assetJSONBody(t, validCreateAssetBody()))
 	req.Header.Set("Content-Type", "application/json")
-	req.Header.Set("Authorization", "Bearer "+token)
+	req.AddCookie(&http.Cookie{Name: "jwt_token", Value: token})
 	w := httptest.NewRecorder()
 
 	r.ServeHTTP(w, req)
@@ -289,7 +289,7 @@ func TestAssetHandler_Create_InvalidToken(t *testing.T) {
 	r := setupAssetRouter(svc)
 	req := httptest.NewRequest(http.MethodPost, "/api/assets", assetJSONBody(t, validCreateAssetBody()))
 	req.Header.Set("Content-Type", "application/json")
-	req.Header.Set("Authorization", "Bearer not.a.valid.token")
+	req.AddCookie(&http.Cookie{Name: "jwt_token", Value: "not.a.valid.token"})
 	w := httptest.NewRecorder()
 
 	r.ServeHTTP(w, req)
@@ -309,7 +309,7 @@ func TestAssetHandler_GetByID_Success(t *testing.T) {
 
 	r := setupAssetRouter(svc)
 	req := httptest.NewRequest(http.MethodGet, "/api/assets/42", nil)
-	req.Header.Set("Authorization", "Bearer "+token)
+	req.AddCookie(&http.Cookie{Name: "jwt_token", Value: token})
 	w := httptest.NewRecorder()
 
 	r.ServeHTTP(w, req)
@@ -325,7 +325,7 @@ func TestAssetHandler_GetByID_NonNumericID(t *testing.T) {
 
 	r := setupAssetRouter(svc)
 	req := httptest.NewRequest(http.MethodGet, "/api/assets/abc", nil)
-	req.Header.Set("Authorization", "Bearer "+token)
+	req.AddCookie(&http.Cookie{Name: "jwt_token", Value: token})
 	w := httptest.NewRecorder()
 
 	r.ServeHTTP(w, req)
@@ -343,7 +343,7 @@ func TestAssetHandler_GetByID_NotFound(t *testing.T) {
 
 	r := setupAssetRouter(svc)
 	req := httptest.NewRequest(http.MethodGet, "/api/assets/99", nil)
-	req.Header.Set("Authorization", "Bearer "+token)
+	req.AddCookie(&http.Cookie{Name: "jwt_token", Value: token})
 	w := httptest.NewRecorder()
 
 	r.ServeHTTP(w, req)
@@ -361,7 +361,7 @@ func TestAssetHandler_GetByID_InternalError(t *testing.T) {
 
 	r := setupAssetRouter(svc)
 	req := httptest.NewRequest(http.MethodGet, "/api/assets/1", nil)
-	req.Header.Set("Authorization", "Bearer "+token)
+	req.AddCookie(&http.Cookie{Name: "jwt_token", Value: token})
 	w := httptest.NewRecorder()
 
 	r.ServeHTTP(w, req)
@@ -395,7 +395,7 @@ func TestAssetHandler_GetAll_Success(t *testing.T) {
 
 	r := setupAssetRouter(svc)
 	req := httptest.NewRequest(http.MethodGet, "/api/assets", nil)
-	req.Header.Set("Authorization", "Bearer "+token)
+	req.AddCookie(&http.Cookie{Name: "jwt_token", Value: token})
 	w := httptest.NewRecorder()
 
 	r.ServeHTTP(w, req)
@@ -412,7 +412,7 @@ func TestAssetHandler_GetAll_CustomPagination(t *testing.T) {
 
 	r := setupAssetRouter(svc)
 	req := httptest.NewRequest(http.MethodGet, "/api/assets?limit=10&offset=20", nil)
-	req.Header.Set("Authorization", "Bearer "+token)
+	req.AddCookie(&http.Cookie{Name: "jwt_token", Value: token})
 	w := httptest.NewRecorder()
 
 	r.ServeHTTP(w, req)
@@ -427,7 +427,7 @@ func TestAssetHandler_GetAll_InvalidLimit(t *testing.T) {
 
 	r := setupAssetRouter(svc)
 	req := httptest.NewRequest(http.MethodGet, "/api/assets?limit=abc", nil)
-	req.Header.Set("Authorization", "Bearer "+token)
+	req.AddCookie(&http.Cookie{Name: "jwt_token", Value: token})
 	w := httptest.NewRecorder()
 
 	r.ServeHTTP(w, req)
@@ -443,7 +443,7 @@ func TestAssetHandler_GetAll_InvalidOffset(t *testing.T) {
 
 	r := setupAssetRouter(svc)
 	req := httptest.NewRequest(http.MethodGet, "/api/assets?offset=abc", nil)
-	req.Header.Set("Authorization", "Bearer "+token)
+	req.AddCookie(&http.Cookie{Name: "jwt_token", Value: token})
 	w := httptest.NewRecorder()
 
 	r.ServeHTTP(w, req)
@@ -461,7 +461,7 @@ func TestAssetHandler_GetAll_LimitCappedToMax(t *testing.T) {
 
 	r := setupAssetRouter(svc)
 	req := httptest.NewRequest(http.MethodGet, "/api/assets?limit=201", nil)
-	req.Header.Set("Authorization", "Bearer "+token)
+	req.AddCookie(&http.Cookie{Name: "jwt_token", Value: token})
 	w := httptest.NewRecorder()
 
 	r.ServeHTTP(w, req)
@@ -478,7 +478,7 @@ func TestAssetHandler_GetAll_InternalError(t *testing.T) {
 
 	r := setupAssetRouter(svc)
 	req := httptest.NewRequest(http.MethodGet, "/api/assets", nil)
-	req.Header.Set("Authorization", "Bearer "+token)
+	req.AddCookie(&http.Cookie{Name: "jwt_token", Value: token})
 	w := httptest.NewRecorder()
 
 	r.ServeHTTP(w, req)
@@ -514,7 +514,7 @@ func TestAssetHandler_Update_Success(t *testing.T) {
 	body := assetJSONBody(t, map[string]string{"name": "Infosys Limited"})
 	req := httptest.NewRequest(http.MethodPut, "/api/assets/1", body)
 	req.Header.Set("Content-Type", "application/json")
-	req.Header.Set("Authorization", "Bearer "+token)
+	req.AddCookie(&http.Cookie{Name: "jwt_token", Value: token})
 	w := httptest.NewRecorder()
 
 	r.ServeHTTP(w, req)
@@ -532,7 +532,7 @@ func TestAssetHandler_Update_NonNumericID(t *testing.T) {
 	body := assetJSONBody(t, map[string]string{"name": "Infosys Limited"})
 	req := httptest.NewRequest(http.MethodPut, "/api/assets/abc", body)
 	req.Header.Set("Content-Type", "application/json")
-	req.Header.Set("Authorization", "Bearer "+token)
+	req.AddCookie(&http.Cookie{Name: "jwt_token", Value: token})
 	w := httptest.NewRecorder()
 
 	r.ServeHTTP(w, req)
@@ -549,7 +549,7 @@ func TestAssetHandler_Update_MalformedJSON(t *testing.T) {
 	r := setupAssetRouter(svc)
 	req := httptest.NewRequest(http.MethodPut, "/api/assets/1", bytes.NewBufferString(`{invalid`))
 	req.Header.Set("Content-Type", "application/json")
-	req.Header.Set("Authorization", "Bearer "+token)
+	req.AddCookie(&http.Cookie{Name: "jwt_token", Value: token})
 	w := httptest.NewRecorder()
 
 	r.ServeHTTP(w, req)
@@ -568,7 +568,7 @@ func TestAssetHandler_Update_NotFound(t *testing.T) {
 	body := assetJSONBody(t, map[string]string{"name": "Infosys Limited"})
 	req := httptest.NewRequest(http.MethodPut, "/api/assets/99", body)
 	req.Header.Set("Content-Type", "application/json")
-	req.Header.Set("Authorization", "Bearer "+token)
+	req.AddCookie(&http.Cookie{Name: "jwt_token", Value: token})
 	w := httptest.NewRecorder()
 
 	r.ServeHTTP(w, req)
@@ -588,7 +588,7 @@ func TestAssetHandler_Update_InternalError(t *testing.T) {
 	body := assetJSONBody(t, map[string]string{"name": "Infosys Limited"})
 	req := httptest.NewRequest(http.MethodPut, "/api/assets/1", body)
 	req.Header.Set("Content-Type", "application/json")
-	req.Header.Set("Authorization", "Bearer "+token)
+	req.AddCookie(&http.Cookie{Name: "jwt_token", Value: token})
 	w := httptest.NewRecorder()
 
 	r.ServeHTTP(w, req)
@@ -624,7 +624,7 @@ func TestAssetHandler_Delete_Success(t *testing.T) {
 
 	r := setupAssetRouter(svc)
 	req := httptest.NewRequest(http.MethodDelete, "/api/assets/1", nil)
-	req.Header.Set("Authorization", "Bearer "+token)
+	req.AddCookie(&http.Cookie{Name: "jwt_token", Value: token})
 	w := httptest.NewRecorder()
 
 	r.ServeHTTP(w, req)
@@ -640,7 +640,7 @@ func TestAssetHandler_Delete_NonNumericID(t *testing.T) {
 
 	r := setupAssetRouter(svc)
 	req := httptest.NewRequest(http.MethodDelete, "/api/assets/abc", nil)
-	req.Header.Set("Authorization", "Bearer "+token)
+	req.AddCookie(&http.Cookie{Name: "jwt_token", Value: token})
 	w := httptest.NewRecorder()
 
 	r.ServeHTTP(w, req)
@@ -658,7 +658,7 @@ func TestAssetHandler_Delete_NotFound(t *testing.T) {
 
 	r := setupAssetRouter(svc)
 	req := httptest.NewRequest(http.MethodDelete, "/api/assets/99", nil)
-	req.Header.Set("Authorization", "Bearer "+token)
+	req.AddCookie(&http.Cookie{Name: "jwt_token", Value: token})
 	w := httptest.NewRecorder()
 
 	r.ServeHTTP(w, req)
@@ -676,7 +676,7 @@ func TestAssetHandler_Delete_InternalError(t *testing.T) {
 
 	r := setupAssetRouter(svc)
 	req := httptest.NewRequest(http.MethodDelete, "/api/assets/1", nil)
-	req.Header.Set("Authorization", "Bearer "+token)
+	req.AddCookie(&http.Cookie{Name: "jwt_token", Value: token})
 	w := httptest.NewRecorder()
 
 	r.ServeHTTP(w, req)

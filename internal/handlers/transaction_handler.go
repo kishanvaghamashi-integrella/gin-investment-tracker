@@ -41,7 +41,7 @@ func (h *TransactionHandler) SetRoutes(rg *gin.RouterGroup) {
 // @Failure 404 {object} util.ErrorBody
 // @Failure 500 {object} util.ErrorBody
 // @Router /api/transactions [post]
-// @Security BearerAuth
+// @Security CookieAuth
 func (h *TransactionHandler) Create(c *gin.Context) {
 	slog.Info("request started", "handler", "TransactionHandler.Create", "method", c.Request.Method, "path", c.Request.URL.Path)
 
@@ -90,7 +90,7 @@ func (h *TransactionHandler) Create(c *gin.Context) {
 // @Failure 404 {object} util.ErrorBody
 // @Failure 500 {object} util.ErrorBody
 // @Router /api/transactions [get]
-// @Security BearerAuth
+// @Security CookieAuth
 func (h *TransactionHandler) GetAllByUserID(c *gin.Context) {
 	slog.Info("request started", "handler", "TransactionHandler.GetAllByUserID", "method", c.Request.Method, "path", c.Request.URL.Path)
 
@@ -131,7 +131,7 @@ func (h *TransactionHandler) GetAllByUserID(c *gin.Context) {
 // @Failure 404 {object} util.ErrorBody
 // @Failure 500 {object} util.ErrorBody
 // @Router /api/transactions/{txnId} [put]
-// @Security BearerAuth
+// @Security CookieAuth
 func (h *TransactionHandler) Update(c *gin.Context) {
 	slog.Info("request started", "handler", "TransactionHandler.Update", "method", c.Request.Method, "path", c.Request.URL.Path)
 
@@ -175,7 +175,7 @@ func (h *TransactionHandler) Update(c *gin.Context) {
 // @Failure 404 {object} util.ErrorBody
 // @Failure 500 {object} util.ErrorBody
 // @Router /api/transactions/{txnId} [delete]
-// @Security BearerAuth
+// @Security CookieAuth
 func (h *TransactionHandler) Delete(c *gin.Context) {
 	slog.Info("request started", "handler", "TransactionHandler.Delete", "method", c.Request.Method, "path", c.Request.URL.Path)
 

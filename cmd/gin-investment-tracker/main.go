@@ -18,10 +18,10 @@ import (
 // @description API for managing users and assets in MF Stock Tracker.
 // @BasePath /
 // @schemes http https
-// @securityDefinitions.apikey BearerAuth
-// @in header
-// @name Authorization
-// @description Type "Bearer" followed by a space and JWT token.
+// @securityDefinitions.apikey CookieAuth
+// @in cookie
+// @name jwt_token
+// @description JWT token stored in an HttpOnly cookie. Set automatically on login.
 
 func main() {
 	if env := godotenv.Load(); env != nil {

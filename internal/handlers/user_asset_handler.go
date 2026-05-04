@@ -40,7 +40,7 @@ func (h *UserAssetHandler) SetRoutes(rg *gin.RouterGroup) {
 // @Failure 404 {object} util.ErrorBody
 // @Failure 500 {object} util.ErrorBody
 // @Router /api/user-assets [post]
-// @Security BearerAuth
+// @Security CookieAuth
 func (h *UserAssetHandler) Create(c *gin.Context) {
 	slog.Info("request started", "handler", "UserAssetHandler.Create", "method", c.Request.Method, "path", c.Request.URL.Path)
 
@@ -89,7 +89,7 @@ func (h *UserAssetHandler) Create(c *gin.Context) {
 // @Failure 404 {object} util.ErrorBody
 // @Failure 500 {object} util.ErrorBody
 // @Router /api/user-assets [get]
-// @Security BearerAuth
+// @Security CookieAuth
 func (h *UserAssetHandler) GetByUserID(c *gin.Context) {
 	slog.Info("request started", "handler", "UserAssetHandler.GetByUserID", "method", c.Request.Method, "path", c.Request.URL.Path)
 
@@ -128,7 +128,7 @@ func (h *UserAssetHandler) GetByUserID(c *gin.Context) {
 // @Failure 404 {object} util.ErrorBody
 // @Failure 500 {object} util.ErrorBody
 // @Router /api/user-assets/{userAssetId} [delete]
-// @Security BearerAuth
+// @Security CookieAuth
 func (h *UserAssetHandler) Delete(c *gin.Context) {
 	slog.Info("request started", "handler", "UserAssetHandler.Delete", "method", c.Request.Method, "path", c.Request.URL.Path)
 
