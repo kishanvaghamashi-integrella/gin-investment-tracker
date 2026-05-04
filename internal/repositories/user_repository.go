@@ -61,6 +61,21 @@ func (r *UserRepository) Delete(ctx context.Context, userId int64) error {
 	return nil
 }
 
+func (r *UserRepository) CreateGoogleUser(ctx context.Context, user *model.User) error {
+	query := `
+		INSERT INTO users(name, email, password_hash, google_id)
+		VALUES($1, $2, '', $3)
+		RETURNING id
+	`
+
+	err := r.db.QueryRow(ctx, query, user.Name, user.Email, user.GoogleID).Scan(&user.ID)
+	if err != nil {
+		return err
+	}
+
+	return nil
+}
+
 func (r *UserRepository) GetByEmail(ctx context.Context, email string) (*model.User, error) {
 	query := `
 		SELECT id, name, email, password_hash, is_active, created_at, updated_at
@@ -95,6 +110,28 @@ func (r *UserRepository) GetByID(ctx context.Context, id int64) (*model.User, er
 	if err != nil {
 		if err == pgx.ErrNoRows {
 			return nil, util.NewNotFoundError("User not found")
+		}
+		return nil, err
+	}
+
+	return &user, nil
+}
+
+func (r *UserRepository) GetByGoogleID(ctx context.Context, googleId string) (*model.User, error) {
+	query := `
+		SELECT id, name, email, password_hash, google_id, is_active, created_at, updated_at
+		FROM users
+		WHERE google_id = $1 AND is_active = TRUE
+	`
+
+	var user model.User
+	err := r.db.QueryRow(ctx, query, googleId).Scan(
+		&user.ID, &user.Name, &user.Email, &user.PasswordHash, &user.GoogleID,
+		&user.IsActive, &user.CreatedAt, &user.UpdatedAt,
+	)
+	if err != nil {
+		if err == pgx.ErrNoRows {
+			return nil, nil
 		}
 		return nil, err
 	}

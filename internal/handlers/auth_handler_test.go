@@ -7,6 +7,7 @@ import (
 	"net/http/httptest"
 	"testing"
 
+	dto "gin-investment-tracker/internal/dtos"
 	handler "gin-investment-tracker/internal/handlers"
 	middleware "gin-investment-tracker/internal/middlewares"
 	"gin-investment-tracker/internal/mocks"
@@ -30,10 +31,10 @@ func setupRouter(svc *mocks.MockUserService) *gin.Engine {
 	h := handler.NewUserHandler(svc)
 	api := r.Group("/api")
 	users := api.Group("/users")
-	users.POST("", h.Create)
+	users.POST("", h.Signup)
 	users.POST("/login", h.Login)
-	users.GET("/verify", middleware.JWTAuth(), h.Verify)
-	users.DELETE("", middleware.JWTAuth(), h.Delete)
+	users.GET("/verify", middleware.JWTAuth(), h.GetUserDetails)
+	users.DELETE("", middleware.JWTAuth(), h.DeleteUser)
 	return r
 }
 
@@ -252,10 +253,11 @@ func TestUserHandler_Create_ServiceInternalError(t *testing.T) {
 func TestUserHandler_Login_Success(t *testing.T) {
 	t.Setenv("JWT_SECRET", "test-secret-key")
 	svc := new(mocks.MockUserService)
-	svc.On("Login", mock.Anything, mock.Anything).Return(&model.User{
+	svc.On("Login", mock.Anything, mock.Anything).Return(&dto.LoginResponse{
 		ID:    1,
 		Name:  "Alice",
 		Email: "alice@example.com",
+		Token: "mocked-token",
 	}, nil)
 
 	r := setupRouter(svc)
