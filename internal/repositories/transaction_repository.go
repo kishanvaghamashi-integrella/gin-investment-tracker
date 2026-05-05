@@ -75,18 +75,8 @@ func (r *TransactionRepository) Create(ctx context.Context, txn *model.Transacti
 	return nil
 }
 
-func (r *TransactionRepository) GetAllByUserID(ctx context.Context, userID int64, limit, offset int) ([]dto.TransactionResponseDto, error) {
-	query := `
-		SELECT t.id, t.user_asset_id, a.name, a.instrument_type, t.txn_type, t.quantity, t.price, t.txn_date
-		FROM transactions t
-		INNER JOIN user_assets ua ON t.user_asset_id = ua.id
-		INNER JOIN assets a ON a.id = ua.asset_id
-		WHERE ua.user_id = $1
-		ORDER BY t.txn_date DESC, t.id DESC
-		LIMIT $2 OFFSET $3
-	`
-
-	rows, err := r.db.Query(ctx, query, userID, limit, offset)
+func (r *TransactionRepository) queryTransactionsToFetch(ctx context.Context, query string, args ...any) ([]dto.TransactionResponseDto, error) {
+	rows, err := r.db.Query(ctx, query, args...)
 	if err != nil {
 		slog.Error("failed to list transactions", "error", err.Error())
 		return nil, util.NewInternalError("failed to list transactions")
@@ -109,6 +99,32 @@ func (r *TransactionRepository) GetAllByUserID(ctx context.Context, userID int64
 	}
 
 	return transactions, nil
+}
+
+func (r *TransactionRepository) GetAllByUserID(ctx context.Context, userID int64, limit, offset int) ([]dto.TransactionResponseDto, error) {
+	query := `
+		SELECT t.id, t.user_asset_id, a.name, a.instrument_type, t.txn_type, t.quantity, t.price, t.txn_date
+		FROM transactions t
+		INNER JOIN user_assets ua ON t.user_asset_id = ua.id
+		INNER JOIN assets a ON a.id = ua.asset_id
+		WHERE ua.user_id = $1
+		ORDER BY t.txn_date DESC, t.id DESC
+		LIMIT $2 OFFSET $3
+	`
+	return r.queryTransactionsToFetch(ctx, query, userID, limit, offset)
+}
+
+func (r *TransactionRepository) GetAllByUserIDAndAssetID(ctx context.Context, userID int64, assetID, limit, offset int) ([]dto.TransactionResponseDto, error) {
+	query := `
+		SELECT t.id, t.user_asset_id, a.name, a.instrument_type, t.txn_type, t.quantity, t.price, t.txn_date
+		FROM transactions t
+		INNER JOIN user_assets ua ON t.user_asset_id = ua.id
+		INNER JOIN assets a ON a.id = ua.asset_id
+		WHERE ua.user_id = $1 AND ua.asset_id = $2
+		ORDER BY t.txn_date DESC, t.id DESC
+		LIMIT $3 OFFSET $4
+	`
+	return r.queryTransactionsToFetch(ctx, query, userID, assetID, limit, offset)
 }
 
 func (r *TransactionRepository) GetHoldingsByUserAssetID(ctx context.Context, userAssetID int64) (*model.Holding, error) {

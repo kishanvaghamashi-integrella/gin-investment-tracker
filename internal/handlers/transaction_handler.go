@@ -8,6 +8,7 @@ import (
 	"gin-investment-tracker/internal/util"
 	"log/slog"
 	"net/http"
+	"strconv"
 
 	"github.com/gin-gonic/gin"
 	"github.com/go-playground/validator/v10"
@@ -24,7 +25,7 @@ func NewTransactionHandler(svc service.TransactionServiceInterface) *Transaction
 func (h *TransactionHandler) SetRoutes(rg *gin.RouterGroup) {
 	transactions := rg.Group("/transactions")
 	transactions.POST("", h.Create)
-	transactions.GET("", h.GetAllByUserID)
+	transactions.GET("", h.GetAll)
 	transactions.PUT("/:txnId", h.Update)
 	transactions.DELETE("/:txnId", h.Delete)
 }
@@ -78,20 +79,21 @@ func (h *TransactionHandler) Create(c *gin.Context) {
 	})
 }
 
-// GetAllByUserID godoc
+// GetAll godoc
 // @Summary List transactions for the authenticated user
 // @Description Get all transactions for the current user with pagination
 // @Tags transactions
 // @Produce json
 // @Param limit query int false "Number of records to return (default: 50, max: 200)"
 // @Param offset query int false "Number of records to skip (default: 0)"
+// @Param assetid query int false "Filter transactions by asset ID (optional)"
 // @Success 200 {array} dto.TransactionResponseDto
 // @Failure 400 {object} util.ErrorBody
 // @Failure 404 {object} util.ErrorBody
 // @Failure 500 {object} util.ErrorBody
 // @Router /api/transactions [get]
 // @Security CookieAuth
-func (h *TransactionHandler) GetAllByUserID(c *gin.Context) {
+func (h *TransactionHandler) GetAll(c *gin.Context) {
 	slog.Info("request started", "handler", "TransactionHandler.GetAllByUserID", "method", c.Request.Method, "path", c.Request.URL.Path)
 
 	userID, ok := util.GetUserIDFromContext(c)
@@ -108,7 +110,15 @@ func (h *TransactionHandler) GetAllByUserID(c *gin.Context) {
 		return
 	}
 
-	transactions, err := h.service.GetAllByUserID(c.Request.Context(), userID, limit, offset)
+	assetID := -1
+	if assetIDStr := c.Query("assetid"); assetIDStr != "" {
+		temp, err := strconv.Atoi(assetIDStr)
+		if err == nil {
+			assetID = temp
+		}
+	}
+
+	transactions, err := h.service.GetAllByUserIDAndAssetID(c.Request.Context(), userID, assetID, limit, offset)
 	if err != nil {
 		util.HandleError(c, err, "TransactionHandler.GetAllByUserID")
 		return

@@ -9,7 +9,7 @@ import (
 
 type TransactionServiceInterface interface {
 	Create(ctx context.Context, req *dto.CreateTransactionRequest, userId int64) (*model.Transaction, error)
-	GetAllByUserID(ctx context.Context, userID int64, limit, offset int) ([]dto.TransactionResponseDto, error)
+	GetAllByUserIDAndAssetID(ctx context.Context, userID int64, assetID, limit, offset int) ([]dto.TransactionResponseDto, error)
 	Update(ctx context.Context, id int64, req *dto.UpdateTransactionRequest) error
 	Delete(ctx context.Context, id int64) error
 }

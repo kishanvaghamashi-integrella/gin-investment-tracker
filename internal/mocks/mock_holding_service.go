@@ -12,8 +12,8 @@ type MockHoldingService struct {
 	mock.Mock
 }
 
-func (m *MockHoldingService) GetAllByUserID(ctx context.Context, userID int64, limit, offset int) ([]dto.HoldingResponseDto, error) {
-	args := m.Called(ctx, userID, limit, offset)
+func (m *MockHoldingService) GetAllByUserID(ctx context.Context, userID int64, limit, offset int, sortByQuery, assetNameQuery string) ([]dto.HoldingResponseDto, error) {
+	args := m.Called(ctx, userID, limit, offset, sortByQuery, assetNameQuery)
 	if args.Get(0) == nil {
 		return nil, args.Error(1)
 	}

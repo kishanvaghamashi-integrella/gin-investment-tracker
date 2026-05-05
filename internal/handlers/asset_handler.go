@@ -21,6 +21,15 @@ func NewAssetHandler(svc service.AssetServiceInterface) *AssetHandler {
 	return &AssetHandler{service: svc}
 }
 
+func (h *AssetHandler) SetRoutes(r *gin.RouterGroup) {
+	assets := r.Group("/assets")
+	assets.POST("", h.Create)
+	assets.GET("", h.GetAll)
+	assets.GET("/:assetId", h.GetByID)
+	assets.PUT("/:assetId", h.Update)
+	assets.DELETE("/:assetId", h.Delete)
+}
+
 // Create godoc
 // @Summary Create asset
 // @Description Create a new asset
@@ -201,13 +210,4 @@ func (h *AssetHandler) Delete(c *gin.Context) {
 
 	slog.Info("asset deleted", "handler", "AssetHandler.Delete", "assetID", id)
 	util.SendResponse(c, http.StatusOK, map[string]string{"message": "asset deleted successfully"})
-}
-
-func (h *AssetHandler) SetRoutes(r *gin.RouterGroup) {
-	assets := r.Group("/assets")
-	assets.POST("", h.Create)
-	assets.GET("", h.GetAll)
-	assets.GET("/:assetId", h.GetByID)
-	assets.PUT("/:assetId", h.Update)
-	assets.DELETE("/:assetId", h.Delete)
 }

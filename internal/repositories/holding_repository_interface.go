@@ -6,5 +6,5 @@ import (
 )
 
 type HoldingRepositoryInterface interface {
-	GetAllByUserID(ctx context.Context, userID int64, limit, offset int) ([]dto.HoldingResponseDto, error)
+	GetAllByUserID(ctx context.Context, userID int64, limit, offset int, sortByQuery, assetNameQuery string) ([]dto.HoldingResponseDto, error)
 }

@@ -337,7 +337,7 @@ func TestTransactionService_GetAllByUserID_Success(t *testing.T) {
 	userRepo.On("ExistsByID", context.Background(), int64(1)).Return(true, nil)
 	txnRepo.On("GetAllByUserID", context.Background(), int64(1), 50, 0).Return(expected, nil)
 
-	result, err := svc.GetAllByUserID(context.Background(), 1, 50, 0)
+	result, err := svc.GetAllByUserIDAndAssetID(context.Background(), 1, -1, 50, 0)
 
 	require.NoError(t, err)
 	assert.Len(t, result, 2)
@@ -355,7 +355,7 @@ func TestTransactionService_GetAllByUserID_UserNotFound(t *testing.T) {
 
 	userRepo.On("ExistsByID", context.Background(), int64(99)).Return(false, nil)
 
-	result, err := svc.GetAllByUserID(context.Background(), 99, 50, 0)
+	result, err := svc.GetAllByUserIDAndAssetID(context.Background(), 99, -1, 50, 0)
 
 	require.Nil(t, result)
 	require.Error(t, err)
@@ -376,7 +376,7 @@ func TestTransactionService_GetAllByUserID_RepoError(t *testing.T) {
 	txnRepo.On("GetAllByUserID", context.Background(), int64(1), 50, 0).
 		Return(nil, util.NewInternalError("db failure"))
 
-	result, err := svc.GetAllByUserID(context.Background(), 1, 50, 0)
+	result, err := svc.GetAllByUserIDAndAssetID(context.Background(), 1, -1, 50, 0)
 
 	require.Nil(t, result)
 	require.Error(t, err)

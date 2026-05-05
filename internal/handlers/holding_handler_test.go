@@ -89,7 +89,7 @@ func TestHoldingHandler_GetAll_InvalidToken(t *testing.T) {
 func TestHoldingHandler_GetAll_Success(t *testing.T) {
 	token := validHoldingToken(t, 1, "user@example.com")
 	svc := new(mocks.MockHoldingService)
-	svc.On("GetAllByUserID", mock.Anything, int64(1), 50, 0).
+	svc.On("GetAllByUserID", mock.Anything, int64(1), 50, 0, "id", "").
 		Return([]dto.HoldingResponseDto{
 			{ID: 1, AssetName: "HDFC Flexi Cap", Quantity: 10, AveragePrice: 100},
 		}, nil)
@@ -109,7 +109,7 @@ func TestHoldingHandler_GetAll_Success(t *testing.T) {
 func TestHoldingHandler_GetAll_UserNotFound(t *testing.T) {
 	token := validHoldingToken(t, 99, "ghost@example.com")
 	svc := new(mocks.MockHoldingService)
-	svc.On("GetAllByUserID", mock.Anything, int64(99), 50, 0).
+	svc.On("GetAllByUserID", mock.Anything, int64(99), 50, 0, "id", "").
 		Return(nil, util.NewNotFoundError("user with id 99 not found"))
 
 	r := setupHoldingRouter(svc)
@@ -126,7 +126,7 @@ func TestHoldingHandler_GetAll_UserNotFound(t *testing.T) {
 func TestHoldingHandler_GetAll_InternalError(t *testing.T) {
 	token := validHoldingToken(t, 1, "user@example.com")
 	svc := new(mocks.MockHoldingService)
-	svc.On("GetAllByUserID", mock.Anything, int64(1), 50, 0).
+	svc.On("GetAllByUserID", mock.Anything, int64(1), 50, 0, "id", "").
 		Return(nil, util.NewInternalError("db failure"))
 
 	r := setupHoldingRouter(svc)
@@ -173,7 +173,7 @@ func TestHoldingHandler_GetAll_InvalidOffsetParam(t *testing.T) {
 func TestHoldingHandler_GetAll_WithPaginationParams(t *testing.T) {
 	token := validHoldingToken(t, 1, "user@example.com")
 	svc := new(mocks.MockHoldingService)
-	svc.On("GetAllByUserID", mock.Anything, int64(1), 10, 20).
+	svc.On("GetAllByUserID", mock.Anything, int64(1), 10, 20, "id", "").
 		Return([]dto.HoldingResponseDto{}, nil)
 
 	r := setupHoldingRouter(svc)
