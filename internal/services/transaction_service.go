@@ -116,9 +116,13 @@ func (s *TransactionService) Create(ctx context.Context, req *dto.CreateTransact
 	return txn, nil
 }
 
-func (s *TransactionService) GetAllByUserID(ctx context.Context, userID int64, limit, offset int) ([]dto.TransactionResponseDto, error) {
+func (s *TransactionService) GetAllByUserIDAndAssetID(ctx context.Context, userID int64, assetID, limit, offset int) ([]dto.TransactionResponseDto, error) {
 	if err := s.ensureUserExists(ctx, userID); err != nil {
 		return nil, err
+	}
+
+	if assetID != -1 {
+		return s.repo.GetAllByUserIDAndAssetID(ctx, userID, assetID, limit, offset)
 	}
 
 	return s.repo.GetAllByUserID(ctx, userID, limit, offset)

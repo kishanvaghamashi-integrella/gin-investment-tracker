@@ -9,6 +9,7 @@ import (
 type TransactionRepositoryInterface interface {
 	Create(ctx context.Context, txn *model.Transaction, holding *model.Holding, isUpdate bool) error
 	GetAllByUserID(ctx context.Context, userID int64, limit, offset int) ([]dto.TransactionResponseDto, error)
+	GetAllByUserIDAndAssetID(ctx context.Context, userID int64, assetID, limit, offset int) ([]dto.TransactionResponseDto, error)
 	GetHoldingsByUserAssetID(ctx context.Context, userAssetID int64) (*model.Holding, error)
 	GetByID(ctx context.Context, id int64) (*model.Transaction, error)
 	Update(ctx context.Context, txn *model.Transaction) error

@@ -21,12 +21,12 @@ func NewHoldingService(
 	return &HoldingService{repo: repo, userRepo: userRepo}
 }
 
-func (s *HoldingService) GetAllByUserID(ctx context.Context, userID int64, limit, offset int) ([]dto.HoldingResponseDto, error) {
+func (s *HoldingService) GetAllByUserID(ctx context.Context, userID int64, limit, offset int, sortByQuery, assetNameQuery string) ([]dto.HoldingResponseDto, error) {
 	if err := s.ensureUserExists(ctx, userID); err != nil {
 		return nil, err
 	}
 
-	holdings, err := s.repo.GetAllByUserID(ctx, userID, limit, offset)
+	holdings, err := s.repo.GetAllByUserID(ctx, userID, limit, offset, sortByQuery, assetNameQuery)
 	if err != nil {
 		return nil, err
 	}

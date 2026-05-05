@@ -324,7 +324,7 @@ func TestTransactionHandler_Create_InvalidToken(t *testing.T) {
 func TestTransactionHandler_GetAllByUserID_Success(t *testing.T) {
 	token := validTxnToken(t, 1, "user@example.com")
 	svc := new(mocks.MockTransactionService)
-	svc.On("GetAllByUserID", mock.Anything, int64(1), 50, 0).
+	svc.On("GetAllByUserIDAndAssetID", mock.Anything, int64(1), -1, 50, 0).
 		Return([]dto.TransactionResponseDto{{ID: 1, AssetName: "INFY", TxnType: "BUY"}}, nil)
 
 	r := setupTransactionRouter(svc)
@@ -342,7 +342,7 @@ func TestTransactionHandler_GetAllByUserID_Success(t *testing.T) {
 func TestTransactionHandler_GetAllByUserID_CustomPagination(t *testing.T) {
 	token := validTxnToken(t, 1, "user@example.com")
 	svc := new(mocks.MockTransactionService)
-	svc.On("GetAllByUserID", mock.Anything, int64(1), 10, 20).
+	svc.On("GetAllByUserIDAndAssetID", mock.Anything, int64(1), -1, 10, 20).
 		Return([]dto.TransactionResponseDto{}, nil)
 
 	r := setupTransactionRouter(svc)
@@ -369,7 +369,7 @@ func TestTransactionHandler_GetAllByUserID_InvalidLimit(t *testing.T) {
 
 	assert.Equal(t, http.StatusBadRequest, w.Code)
 	assert.Contains(t, w.Body.String(), "limit must be a positive integer")
-	svc.AssertNotCalled(t, "GetAllByUserID")
+	svc.AssertNotCalled(t, "GetAllByUserIDAndAssetID")
 }
 
 func TestTransactionHandler_GetAllByUserID_InvalidOffset(t *testing.T) {
@@ -385,13 +385,13 @@ func TestTransactionHandler_GetAllByUserID_InvalidOffset(t *testing.T) {
 
 	assert.Equal(t, http.StatusBadRequest, w.Code)
 	assert.Contains(t, w.Body.String(), "offset must be a non-negative integer")
-	svc.AssertNotCalled(t, "GetAllByUserID")
+	svc.AssertNotCalled(t, "GetAllByUserIDAndAssetID")
 }
 
 func TestTransactionHandler_GetAllByUserID_LimitCappedToMax(t *testing.T) {
 	token := validTxnToken(t, 1, "user@example.com")
 	svc := new(mocks.MockTransactionService)
-	svc.On("GetAllByUserID", mock.Anything, int64(1), 200, 0).
+	svc.On("GetAllByUserIDAndAssetID", mock.Anything, int64(1), -1, 200, 0).
 		Return([]dto.TransactionResponseDto{}, nil)
 
 	r := setupTransactionRouter(svc)
@@ -408,7 +408,7 @@ func TestTransactionHandler_GetAllByUserID_LimitCappedToMax(t *testing.T) {
 func TestTransactionHandler_GetAllByUserID_ServiceNotFound(t *testing.T) {
 	token := validTxnToken(t, 1, "user@example.com")
 	svc := new(mocks.MockTransactionService)
-	svc.On("GetAllByUserID", mock.Anything, int64(1), 50, 0).
+	svc.On("GetAllByUserIDAndAssetID", mock.Anything, int64(1), -1, 50, 0).
 		Return(nil, util.NewNotFoundError("user with id 1 not found"))
 
 	r := setupTransactionRouter(svc)
@@ -425,7 +425,7 @@ func TestTransactionHandler_GetAllByUserID_ServiceNotFound(t *testing.T) {
 func TestTransactionHandler_GetAllByUserID_ServiceInternalError(t *testing.T) {
 	token := validTxnToken(t, 1, "user@example.com")
 	svc := new(mocks.MockTransactionService)
-	svc.On("GetAllByUserID", mock.Anything, int64(1), 50, 0).
+	svc.On("GetAllByUserIDAndAssetID", mock.Anything, int64(1), -1, 50, 0).
 		Return(nil, util.NewInternalError("db failure"))
 
 	r := setupTransactionRouter(svc)
@@ -450,7 +450,7 @@ func TestTransactionHandler_GetAllByUserID_NoAuthHeader(t *testing.T) {
 	r.ServeHTTP(w, req)
 
 	assert.Equal(t, http.StatusUnauthorized, w.Code)
-	svc.AssertNotCalled(t, "GetAllByUserID")
+	svc.AssertNotCalled(t, "GetAllByUserIDAndAssetID")
 }
 
 // ─────────────────────────────────────────────

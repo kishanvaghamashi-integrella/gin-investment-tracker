@@ -32,7 +32,7 @@ func TestHoldingService_GetAllByUserID_UserNotFound(t *testing.T) {
 
 	userRepo.On("ExistsByID", context.Background(), int64(99)).Return(false, nil)
 
-	result, err := svc.GetAllByUserID(context.Background(), 99, 50, 0)
+	result, err := svc.GetAllByUserID(context.Background(), 99, 50, 0, "", "")
 
 	require.Error(t, err)
 	assert.Nil(t, result)
@@ -51,7 +51,7 @@ func TestHoldingService_GetAllByUserID_UserRepoError(t *testing.T) {
 
 	userRepo.On("ExistsByID", context.Background(), int64(1)).Return(false, util.NewInternalError("db error"))
 
-	result, err := svc.GetAllByUserID(context.Background(), 1, 50, 0)
+	result, err := svc.GetAllByUserID(context.Background(), 1, 50, 0, "", "")
 
 	require.Error(t, err)
 	assert.Nil(t, result)
@@ -65,9 +65,9 @@ func TestHoldingService_GetAllByUserID_RepoError(t *testing.T) {
 	svc := newHoldingService(holdingRepo, userRepo)
 
 	userRepo.On("ExistsByID", context.Background(), int64(1)).Return(true, nil)
-	holdingRepo.On("GetAllByUserID", context.Background(), int64(1), 50, 0).Return(nil, util.NewInternalError("failed to list holdings"))
+	holdingRepo.On("GetAllByUserID", context.Background(), int64(1), 50, 0, "", "").Return(nil, util.NewInternalError("failed to list holdings"))
 
-	result, err := svc.GetAllByUserID(context.Background(), 1, 50, 0)
+	result, err := svc.GetAllByUserID(context.Background(), 1, 50, 0, "", "")
 
 	require.Error(t, err)
 	assert.Nil(t, result)
@@ -81,9 +81,9 @@ func TestHoldingService_GetAllByUserID_Success_EmptyResult(t *testing.T) {
 	svc := newHoldingService(holdingRepo, userRepo)
 
 	userRepo.On("ExistsByID", context.Background(), int64(1)).Return(true, nil)
-	holdingRepo.On("GetAllByUserID", context.Background(), int64(1), 50, 0).Return([]dto.HoldingResponseDto{}, nil)
+	holdingRepo.On("GetAllByUserID", context.Background(), int64(1), 50, 0, "", "").Return([]dto.HoldingResponseDto{}, nil)
 
-	result, err := svc.GetAllByUserID(context.Background(), 1, 50, 0)
+	result, err := svc.GetAllByUserID(context.Background(), 1, 50, 0, "", "")
 
 	require.NoError(t, err)
 	assert.NotNil(t, result)
@@ -98,9 +98,9 @@ func TestHoldingService_GetAllByUserID_Success_WithPagination(t *testing.T) {
 	svc := newHoldingService(holdingRepo, userRepo)
 
 	userRepo.On("ExistsByID", context.Background(), int64(2)).Return(true, nil)
-	holdingRepo.On("GetAllByUserID", context.Background(), int64(2), 10, 5).Return([]dto.HoldingResponseDto{}, nil)
+	holdingRepo.On("GetAllByUserID", context.Background(), int64(2), 10, 5, "", "").Return([]dto.HoldingResponseDto{}, nil)
 
-	result, err := svc.GetAllByUserID(context.Background(), 2, 10, 5)
+	result, err := svc.GetAllByUserID(context.Background(), 2, 10, 5, "", "")
 
 	require.NoError(t, err)
 	assert.NotNil(t, result)
