@@ -9,7 +9,6 @@ import (
 
 	dto "gin-investment-tracker/internal/dtos"
 	handler "gin-investment-tracker/internal/handlers"
-	middleware "gin-investment-tracker/internal/middlewares"
 	"gin-investment-tracker/internal/mocks"
 	model "gin-investment-tracker/internal/models"
 	"gin-investment-tracker/internal/util"
@@ -24,18 +23,14 @@ func init() {
 	gin.SetMode(gin.TestMode)
 }
 
-// setupRouter wires up a handler with the given mock service and registers
-// all routes, mirroring routes/routes.go.
+// setupRouter wires up the auth handler using SetRoutes, mirroring routes/routes.go.
+// Actual routes: POST /api/auth, POST /api/auth/email/login, POST /api/auth/logout,
+// GET /api/auth/verify (JWT), DELETE /api/auth (JWT).
 func setupRouter(svc *mocks.MockUserService) *gin.Engine {
 	r := gin.New()
 	h := handler.NewAuthHandler(svc)
 	api := r.Group("/api")
-	users := api.Group("/users")
-	users.POST("", h.Signup)
-	users.POST("/login", h.Login)
-	users.POST("/logout", h.Logout)
-	users.GET("/verify", middleware.JWTAuth(), h.GetUserDetails)
-	users.DELETE("", middleware.JWTAuth(), h.DeleteUser)
+	h.SetRoutes(api)
 	return r
 }
 
@@ -63,7 +58,7 @@ func authCookie(t *testing.T, userID int64, email string) *http.Cookie {
 }
 
 // ─────────────────────────────────────────────
-// POST /api/users — Create
+// POST /api/auth — Create
 // ─────────────────────────────────────────────
 
 func TestUserHandler_Create_Success(t *testing.T) {
@@ -76,7 +71,7 @@ func TestUserHandler_Create_Success(t *testing.T) {
 		"email":    "alice@example.com",
 		"password": "secret123",
 	})
-	req := httptest.NewRequest(http.MethodPost, "/api/users", body)
+	req := httptest.NewRequest(http.MethodPost, "/api/auth", body)
 	req.Header.Set("Content-Type", "application/json")
 	w := httptest.NewRecorder()
 
@@ -91,7 +86,7 @@ func TestUserHandler_Create_MalformedJSON(t *testing.T) {
 	svc := new(mocks.MockUserService)
 	r := setupRouter(svc)
 
-	req := httptest.NewRequest(http.MethodPost, "/api/users", bytes.NewBufferString(`{invalid`))
+	req := httptest.NewRequest(http.MethodPost, "/api/auth", bytes.NewBufferString(`{invalid`))
 	req.Header.Set("Content-Type", "application/json")
 	w := httptest.NewRecorder()
 
@@ -109,7 +104,7 @@ func TestUserHandler_Create_MissingName(t *testing.T) {
 		"email":    "alice@example.com",
 		"password": "secret123",
 	})
-	req := httptest.NewRequest(http.MethodPost, "/api/users", body)
+	req := httptest.NewRequest(http.MethodPost, "/api/auth", body)
 	req.Header.Set("Content-Type", "application/json")
 	w := httptest.NewRecorder()
 
@@ -128,7 +123,7 @@ func TestUserHandler_Create_NameTooShort(t *testing.T) {
 		"email":    "alice@example.com",
 		"password": "secret123",
 	})
-	req := httptest.NewRequest(http.MethodPost, "/api/users", body)
+	req := httptest.NewRequest(http.MethodPost, "/api/auth", body)
 	req.Header.Set("Content-Type", "application/json")
 	w := httptest.NewRecorder()
 
@@ -146,7 +141,7 @@ func TestUserHandler_Create_MissingEmail(t *testing.T) {
 		"name":     "Alice",
 		"password": "secret123",
 	})
-	req := httptest.NewRequest(http.MethodPost, "/api/users", body)
+	req := httptest.NewRequest(http.MethodPost, "/api/auth", body)
 	req.Header.Set("Content-Type", "application/json")
 	w := httptest.NewRecorder()
 
@@ -165,7 +160,7 @@ func TestUserHandler_Create_InvalidEmailFormat(t *testing.T) {
 		"email":    "not-an-email",
 		"password": "secret123",
 	})
-	req := httptest.NewRequest(http.MethodPost, "/api/users", body)
+	req := httptest.NewRequest(http.MethodPost, "/api/auth", body)
 	req.Header.Set("Content-Type", "application/json")
 	w := httptest.NewRecorder()
 
@@ -183,7 +178,7 @@ func TestUserHandler_Create_MissingPassword(t *testing.T) {
 		"name":  "Alice",
 		"email": "alice@example.com",
 	})
-	req := httptest.NewRequest(http.MethodPost, "/api/users", body)
+	req := httptest.NewRequest(http.MethodPost, "/api/auth", body)
 	req.Header.Set("Content-Type", "application/json")
 	w := httptest.NewRecorder()
 
@@ -202,7 +197,7 @@ func TestUserHandler_Create_PasswordTooShort(t *testing.T) {
 		"email":    "alice@example.com",
 		"password": "abc",
 	})
-	req := httptest.NewRequest(http.MethodPost, "/api/users", body)
+	req := httptest.NewRequest(http.MethodPost, "/api/auth", body)
 	req.Header.Set("Content-Type", "application/json")
 	w := httptest.NewRecorder()
 
@@ -222,7 +217,7 @@ func TestUserHandler_Create_ServiceBadRequest(t *testing.T) {
 		"email":    "alice@example.com",
 		"password": "secret123",
 	})
-	req := httptest.NewRequest(http.MethodPost, "/api/users", body)
+	req := httptest.NewRequest(http.MethodPost, "/api/auth", body)
 	req.Header.Set("Content-Type", "application/json")
 	w := httptest.NewRecorder()
 
@@ -243,7 +238,7 @@ func TestUserHandler_Create_ServiceInternalError(t *testing.T) {
 		"email":    "alice@example.com",
 		"password": "secret123",
 	})
-	req := httptest.NewRequest(http.MethodPost, "/api/users", body)
+	req := httptest.NewRequest(http.MethodPost, "/api/auth", body)
 	req.Header.Set("Content-Type", "application/json")
 	w := httptest.NewRecorder()
 
@@ -254,7 +249,7 @@ func TestUserHandler_Create_ServiceInternalError(t *testing.T) {
 }
 
 // ─────────────────────────────────────────────
-// POST /api/users/login — Login
+// POST /api/auth/email/login — Login
 // ─────────────────────────────────────────────
 
 func TestUserHandler_Login_Success(t *testing.T) {
@@ -275,7 +270,7 @@ func TestUserHandler_Login_Success(t *testing.T) {
 		"email":    "alice@example.com",
 		"password": "secret123",
 	})
-	req := httptest.NewRequest(http.MethodPost, "/api/users/login", body)
+	req := httptest.NewRequest(http.MethodPost, "/api/auth/email/login", body)
 	req.Header.Set("Content-Type", "application/json")
 	w := httptest.NewRecorder()
 
@@ -308,7 +303,7 @@ func TestUserHandler_Login_MissingEmail(t *testing.T) {
 	r := setupRouter(svc)
 
 	body := jsonBody(t, map[string]string{"password": "secret123"})
-	req := httptest.NewRequest(http.MethodPost, "/api/users/login", body)
+	req := httptest.NewRequest(http.MethodPost, "/api/auth/email/login", body)
 	req.Header.Set("Content-Type", "application/json")
 	w := httptest.NewRecorder()
 
@@ -323,7 +318,7 @@ func TestUserHandler_Login_InvalidEmailFormat(t *testing.T) {
 	r := setupRouter(svc)
 
 	body := jsonBody(t, map[string]string{"email": "not-an-email", "password": "secret123"})
-	req := httptest.NewRequest(http.MethodPost, "/api/users/login", body)
+	req := httptest.NewRequest(http.MethodPost, "/api/auth/email/login", body)
 	req.Header.Set("Content-Type", "application/json")
 	w := httptest.NewRecorder()
 
@@ -338,7 +333,7 @@ func TestUserHandler_Login_PasswordTooShort(t *testing.T) {
 	r := setupRouter(svc)
 
 	body := jsonBody(t, map[string]string{"email": "alice@example.com", "password": "abc"})
-	req := httptest.NewRequest(http.MethodPost, "/api/users/login", body)
+	req := httptest.NewRequest(http.MethodPost, "/api/auth/email/login", body)
 	req.Header.Set("Content-Type", "application/json")
 	w := httptest.NewRecorder()
 
@@ -354,7 +349,7 @@ func TestUserHandler_Login_ServiceBadRequest(t *testing.T) {
 
 	r := setupRouter(svc)
 	body := jsonBody(t, map[string]string{"email": "alice@example.com", "password": "wrongpass"})
-	req := httptest.NewRequest(http.MethodPost, "/api/users/login", body)
+	req := httptest.NewRequest(http.MethodPost, "/api/auth/email/login", body)
 	req.Header.Set("Content-Type", "application/json")
 	w := httptest.NewRecorder()
 
@@ -371,7 +366,7 @@ func TestUserHandler_Login_ServiceInternalError(t *testing.T) {
 
 	r := setupRouter(svc)
 	body := jsonBody(t, map[string]string{"email": "alice@example.com", "password": "secret123"})
-	req := httptest.NewRequest(http.MethodPost, "/api/users/login", body)
+	req := httptest.NewRequest(http.MethodPost, "/api/auth/email/login", body)
 	req.Header.Set("Content-Type", "application/json")
 	w := httptest.NewRecorder()
 
@@ -382,7 +377,7 @@ func TestUserHandler_Login_ServiceInternalError(t *testing.T) {
 }
 
 // ─────────────────────────────────────────────
-// GET /api/users/verify — Verify (JWT cookie protected)
+// GET /api/auth/verify — Verify (JWT cookie protected)
 // ─────────────────────────────────────────────
 
 func TestUserHandler_Verify_Success(t *testing.T) {
@@ -394,7 +389,7 @@ func TestUserHandler_Verify_Success(t *testing.T) {
 	}, nil)
 
 	r := setupRouter(svc)
-	req := httptest.NewRequest(http.MethodGet, "/api/users/verify", nil)
+	req := httptest.NewRequest(http.MethodGet, "/api/auth/verify", nil)
 	req.AddCookie(authCookie(t, 1, "alice@example.com"))
 	w := httptest.NewRecorder()
 
@@ -416,7 +411,7 @@ func TestUserHandler_Verify_NoCookie(t *testing.T) {
 	svc := new(mocks.MockUserService)
 	r := setupRouter(svc)
 
-	req := httptest.NewRequest(http.MethodGet, "/api/users/verify", nil)
+	req := httptest.NewRequest(http.MethodGet, "/api/auth/verify", nil)
 	w := httptest.NewRecorder()
 
 	r.ServeHTTP(w, req)
@@ -431,7 +426,7 @@ func TestUserHandler_Verify_InvalidToken(t *testing.T) {
 	svc := new(mocks.MockUserService)
 	r := setupRouter(svc)
 
-	req := httptest.NewRequest(http.MethodGet, "/api/users/verify", nil)
+	req := httptest.NewRequest(http.MethodGet, "/api/auth/verify", nil)
 	req.AddCookie(&http.Cookie{Name: "jwt_token", Value: "this.is.not.a.valid.jwt"})
 	w := httptest.NewRecorder()
 
@@ -446,7 +441,7 @@ func TestUserHandler_Verify_UserNotFound(t *testing.T) {
 	svc.On("GetByID", mock.Anything, int64(99)).Return(nil, util.NewNotFoundError("User not found"))
 
 	r := setupRouter(svc)
-	req := httptest.NewRequest(http.MethodGet, "/api/users/verify", nil)
+	req := httptest.NewRequest(http.MethodGet, "/api/auth/verify", nil)
 	req.AddCookie(authCookie(t, 99, "ghost@example.com"))
 	w := httptest.NewRecorder()
 
@@ -462,7 +457,7 @@ func TestUserHandler_Verify_ServiceInternalError(t *testing.T) {
 	svc.On("GetByID", mock.Anything, int64(1)).Return(nil, util.NewInternalError("db failure"))
 
 	r := setupRouter(svc)
-	req := httptest.NewRequest(http.MethodGet, "/api/users/verify", nil)
+	req := httptest.NewRequest(http.MethodGet, "/api/auth/verify", nil)
 	req.AddCookie(authCookie(t, 1, "alice@example.com"))
 	w := httptest.NewRecorder()
 
@@ -473,7 +468,7 @@ func TestUserHandler_Verify_ServiceInternalError(t *testing.T) {
 }
 
 // ─────────────────────────────────────────────
-// DELETE /api/users — Delete (JWT cookie protected)
+// DELETE /api/auth — Delete (JWT cookie protected)
 // ─────────────────────────────────────────────
 
 func TestUserHandler_Delete_Success(t *testing.T) {
@@ -481,7 +476,7 @@ func TestUserHandler_Delete_Success(t *testing.T) {
 	svc.On("Delete", mock.Anything, int64(1)).Return(nil)
 
 	r := setupRouter(svc)
-	req := httptest.NewRequest(http.MethodDelete, "/api/users", nil)
+	req := httptest.NewRequest(http.MethodDelete, "/api/auth", nil)
 	req.AddCookie(authCookie(t, 1, "alice@example.com"))
 	w := httptest.NewRecorder()
 
@@ -497,7 +492,7 @@ func TestUserHandler_Delete_NoCookie(t *testing.T) {
 	svc := new(mocks.MockUserService)
 	r := setupRouter(svc)
 
-	req := httptest.NewRequest(http.MethodDelete, "/api/users", nil)
+	req := httptest.NewRequest(http.MethodDelete, "/api/auth", nil)
 	w := httptest.NewRecorder()
 
 	r.ServeHTTP(w, req)
@@ -512,7 +507,7 @@ func TestUserHandler_Delete_InvalidToken(t *testing.T) {
 	svc := new(mocks.MockUserService)
 	r := setupRouter(svc)
 
-	req := httptest.NewRequest(http.MethodDelete, "/api/users", nil)
+	req := httptest.NewRequest(http.MethodDelete, "/api/auth", nil)
 	req.AddCookie(&http.Cookie{Name: "jwt_token", Value: "completely.wrong.token"})
 	w := httptest.NewRecorder()
 
@@ -527,7 +522,7 @@ func TestUserHandler_Delete_UserNotFound(t *testing.T) {
 	svc.On("Delete", mock.Anything, int64(99)).Return(util.NewNotFoundError("no user found with id 99"))
 
 	r := setupRouter(svc)
-	req := httptest.NewRequest(http.MethodDelete, "/api/users", nil)
+	req := httptest.NewRequest(http.MethodDelete, "/api/auth", nil)
 	req.AddCookie(authCookie(t, 99, "ghost@example.com"))
 	w := httptest.NewRecorder()
 
@@ -543,7 +538,7 @@ func TestUserHandler_Delete_ServiceInternalError(t *testing.T) {
 	svc.On("Delete", mock.Anything, int64(1)).Return(util.NewInternalError("db failure"))
 
 	r := setupRouter(svc)
-	req := httptest.NewRequest(http.MethodDelete, "/api/users", nil)
+	req := httptest.NewRequest(http.MethodDelete, "/api/auth", nil)
 	req.AddCookie(authCookie(t, 1, "alice@example.com"))
 	w := httptest.NewRecorder()
 
@@ -554,14 +549,14 @@ func TestUserHandler_Delete_ServiceInternalError(t *testing.T) {
 }
 
 // ─────────────────────────────────────────────
-// POST /api/users/logout — Logout
+// POST /api/auth/logout — Logout
 // ─────────────────────────────────────────────
 
 func TestUserHandler_Logout_Success(t *testing.T) {
 	svc := new(mocks.MockUserService)
 	r := setupRouter(svc)
 
-	req := httptest.NewRequest(http.MethodPost, "/api/users/logout", nil)
+	req := httptest.NewRequest(http.MethodPost, "/api/auth/logout", nil)
 	w := httptest.NewRecorder()
 
 	r.ServeHTTP(w, req)

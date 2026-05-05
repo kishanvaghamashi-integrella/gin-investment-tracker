@@ -538,3 +538,52 @@ func TestTransactionService_Delete_InternalError(t *testing.T) {
 	assert.Equal(t, 500, appErr.Code)
 	txnRepo.AssertExpectations(t)
 }
+
+// ─────────────────────────────────────────────
+// GetAllByUserIDAndAssetID — with asset filter
+// ─────────────────────────────────────────────
+
+func TestTransactionService_GetAllByUserIDAndAssetID_WithAssetFilter(t *testing.T) {
+	txnRepo := new(mocks.MockTransactionRepository)
+	userAssetRepo := new(mocks.MockUserAssetRepository)
+	userRepo := new(mocks.MockUserRepository)
+	assetRepo := new(mocks.MockAssetRepository)
+	svc := newTransactionService(txnRepo, userAssetRepo, userRepo, assetRepo)
+
+	expected := []dto.TransactionResponseDto{
+		{ID: 1, AssetName: "INFY", TxnType: "BUY", Quantity: 10, Price: 100},
+	}
+
+	userRepo.On("ExistsByID", context.Background(), int64(1)).Return(true, nil)
+	txnRepo.On("GetAllByUserIDAndAssetID", context.Background(), int64(1), 5, 50, 0).Return(expected, nil)
+
+	result, err := svc.GetAllByUserIDAndAssetID(context.Background(), 1, 5, 50, 0)
+
+	require.NoError(t, err)
+	assert.Len(t, result, 1)
+	assert.Equal(t, expected, result)
+	userRepo.AssertExpectations(t)
+	txnRepo.AssertExpectations(t)
+	txnRepo.AssertNotCalled(t, "GetAllByUserID")
+}
+
+func TestTransactionService_GetAllByUserIDAndAssetID_WithAssetFilter_RepoError(t *testing.T) {
+	txnRepo := new(mocks.MockTransactionRepository)
+	userAssetRepo := new(mocks.MockUserAssetRepository)
+	userRepo := new(mocks.MockUserRepository)
+	assetRepo := new(mocks.MockAssetRepository)
+	svc := newTransactionService(txnRepo, userAssetRepo, userRepo, assetRepo)
+
+	userRepo.On("ExistsByID", context.Background(), int64(1)).Return(true, nil)
+	txnRepo.On("GetAllByUserIDAndAssetID", context.Background(), int64(1), 5, 50, 0).
+		Return(nil, util.NewInternalError("db failure"))
+
+	result, err := svc.GetAllByUserIDAndAssetID(context.Background(), 1, 5, 50, 0)
+
+	require.Nil(t, result)
+	require.Error(t, err)
+	appErr, ok := err.(*util.AppError)
+	require.True(t, ok)
+	assert.Equal(t, 500, appErr.Code)
+	txnRepo.AssertExpectations(t)
+}

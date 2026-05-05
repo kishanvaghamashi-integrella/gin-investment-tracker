@@ -270,3 +270,112 @@ func TestUserService_Delete_InternalError(t *testing.T) {
 	assert.Equal(t, 500, appErr.Code)
 	mockRepo.AssertExpectations(t)
 }
+
+// ─────────────────────────────────────────────
+// GoogleLogin
+// ─────────────────────────────────────────────
+
+func TestUserService_GoogleLogin_Success_ExistingUser(t *testing.T) {
+	t.Setenv("JWT_SECRET", "test-secret-key")
+	mockRepo := new(mocks.MockUserRepository)
+	svc := service.NewAuthService(mockRepo)
+
+	googleID := "google-sub-12345"
+	existingUser := &model.User{
+		ID:       42,
+		Name:     "Alice",
+		Email:    "alice@google.com",
+		GoogleID: &googleID,
+	}
+	userInfo := &dto.GoogleUserInfo{
+		Sub:           "google-sub-12345",
+		Name:          "Alice",
+		Email:         "alice@google.com",
+		EmailVerified: true,
+	}
+
+	mockRepo.On("GetByGoogleID", context.Background(), "google-sub-12345").Return(existingUser, nil)
+
+	resp, err := svc.GoogleLogin(context.Background(), userInfo)
+
+	require.NoError(t, err)
+	require.NotNil(t, resp)
+	assert.Equal(t, int64(42), resp.ID)
+	assert.Equal(t, "alice@google.com", resp.Email)
+	assert.NotEmpty(t, resp.Token)
+	mockRepo.AssertExpectations(t)
+	mockRepo.AssertNotCalled(t, "CreateGoogleUser")
+}
+
+func TestUserService_GoogleLogin_Success_NewUser(t *testing.T) {
+	t.Setenv("JWT_SECRET", "test-secret-key")
+	mockRepo := new(mocks.MockUserRepository)
+	svc := service.NewAuthService(mockRepo)
+
+	userInfo := &dto.GoogleUserInfo{
+		Sub:           "google-sub-99999",
+		Name:          "Bob",
+		Email:         "bob@google.com",
+		EmailVerified: true,
+	}
+
+	mockRepo.On("GetByGoogleID", context.Background(), "google-sub-99999").Return(nil, nil)
+	mockRepo.On("CreateGoogleUser", context.Background(), mock.AnythingOfType("*model.User")).Return(nil)
+
+	resp, err := svc.GoogleLogin(context.Background(), userInfo)
+
+	require.NoError(t, err)
+	require.NotNil(t, resp)
+	assert.Equal(t, "bob@google.com", resp.Email)
+	assert.NotEmpty(t, resp.Token)
+	mockRepo.AssertExpectations(t)
+}
+
+func TestUserService_GoogleLogin_GetByGoogleIDError(t *testing.T) {
+	mockRepo := new(mocks.MockUserRepository)
+	svc := service.NewAuthService(mockRepo)
+
+	userInfo := &dto.GoogleUserInfo{
+		Sub:   "google-sub-12345",
+		Name:  "Alice",
+		Email: "alice@google.com",
+	}
+
+	mockRepo.On("GetByGoogleID", context.Background(), "google-sub-12345").
+		Return(nil, errors.New("db connection refused"))
+
+	resp, err := svc.GoogleLogin(context.Background(), userInfo)
+
+	require.Nil(t, resp)
+	require.Error(t, err)
+	appErr, ok := err.(*util.AppError)
+	require.True(t, ok)
+	assert.Equal(t, 500, appErr.Code)
+	assert.Equal(t, "failed to fetch user", appErr.Message)
+	mockRepo.AssertExpectations(t)
+}
+
+func TestUserService_GoogleLogin_CreateGoogleUserError(t *testing.T) {
+	mockRepo := new(mocks.MockUserRepository)
+	svc := service.NewAuthService(mockRepo)
+
+	userInfo := &dto.GoogleUserInfo{
+		Sub:   "google-sub-99999",
+		Name:  "Bob",
+		Email: "bob@google.com",
+	}
+
+	mockRepo.On("GetByGoogleID", context.Background(), "google-sub-99999").Return(nil, nil)
+	mockRepo.On("CreateGoogleUser", context.Background(), mock.AnythingOfType("*model.User")).
+		Return(errors.New("db failure"))
+
+	resp, err := svc.GoogleLogin(context.Background(), userInfo)
+
+	require.Nil(t, resp)
+	require.Error(t, err)
+	appErr, ok := err.(*util.AppError)
+	require.True(t, ok)
+	assert.Equal(t, 500, appErr.Code)
+	assert.Equal(t, "failed to create user", appErr.Message)
+	mockRepo.AssertExpectations(t)
+}
