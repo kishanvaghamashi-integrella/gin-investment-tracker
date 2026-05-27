@@ -4,7 +4,6 @@ import (
 	"context"
 	"errors"
 	"fmt"
-	"log/slog"
 	"strconv"
 	"time"
 
@@ -35,8 +34,7 @@ func (r *StatementRepository) ProcessCASStatement(ctx context.Context, cas *casp
 
 	tx, err := r.db.Begin(ctx)
 	if err != nil {
-		slog.Error("failed to begin CAS import transaction", "error", err.Error())
-		return util.NewInternalError("failed to begin transaction")
+		return util.NewInternalError("failed to begin transaction", err)
 	}
 	defer tx.Rollback(ctx)
 
@@ -49,8 +47,7 @@ func (r *StatementRepository) ProcessCASStatement(ctx context.Context, cas *casp
 	}
 
 	if err := tx.Commit(ctx); err != nil {
-		slog.Error("failed to commit CAS import transaction", "error", err.Error())
-		return util.NewInternalError("failed to commit transaction")
+		return util.NewInternalError("failed to commit transaction", err)
 	}
 
 	return nil
@@ -72,8 +69,7 @@ func processScheme(ctx context.Context, tx pgx.Tx, scheme casparsermodel.Scheme,
 		userAssetID, fromDate, toDate,
 	)
 	if err != nil {
-		slog.Error("failed to delete transactions in date range", "error", err.Error())
-		return util.NewInternalError("failed to delete transactions")
+		return util.NewInternalError("failed to delete transactions", err)
 	}
 
 	for _, txnData := range scheme.Transactions {
@@ -84,19 +80,19 @@ func processScheme(ctx context.Context, tx pgx.Tx, scheme casparsermodel.Scheme,
 
 		txnDate, err := parseDate(txnData.Date)
 		if err != nil {
-			slog.Warn("skipping transaction with unparseable date", "date", txnData.Date)
+			util.FromContext(ctx).Warnw("skipping transaction with unparseable date", "date", txnData.Date)
 			continue
 		}
 
 		quantity, err := strconv.ParseFloat(txnData.Units, 64)
 		if err != nil || quantity == 0 {
-			slog.Warn("skipping transaction with invalid units", "units", txnData.Units)
+			util.FromContext(ctx).Warnw("skipping transaction with invalid units", "units", txnData.Units)
 			continue
 		}
 
 		price, err := strconv.ParseFloat(txnData.NAV, 64)
 		if err != nil {
-			slog.Warn("skipping transaction with invalid nav", "nav", txnData.NAV)
+			util.FromContext(ctx).Warnw("skipping transaction with invalid nav", "nav", txnData.NAV)
 			continue
 		}
 
@@ -111,8 +107,7 @@ func processScheme(ctx context.Context, tx pgx.Tx, scheme casparsermodel.Scheme,
 			userAssetID, txnType, quantity, price, txnDate, desc,
 		)
 		if err != nil {
-			slog.Error("failed to insert transaction from CAS data", "error", err.Error())
-			return util.NewInternalError("failed to insert transaction")
+			return util.NewInternalError("failed to insert transaction", err)
 		}
 	}
 
@@ -126,8 +121,7 @@ func findOrCreateAsset(ctx context.Context, tx pgx.Tx, scheme casparsermodel.Sch
 		return assetID, nil
 	}
 	if !errors.Is(err, pgx.ErrNoRows) {
-		slog.Error("failed to query asset by isin", "error", err.Error())
-		return 0, util.NewInternalError("failed to query asset")
+		return 0, util.NewInternalError("failed to query asset", err)
 	}
 
 	var amcPtr *string
@@ -142,8 +136,7 @@ func findOrCreateAsset(ctx context.Context, tx pgx.Tx, scheme casparsermodel.Sch
 		scheme.ISIN, scheme.Scheme, "mutual_fund", scheme.ISIN, amcPtr, "MF", "INR", scheme.AMFI,
 	).Scan(&assetID)
 	if err != nil {
-		slog.Error("failed to create asset from CAS data", "error", err.Error())
-		return 0, util.NewInternalError("failed to create asset")
+		return 0, util.NewInternalError("failed to create asset", err)
 	}
 
 	return assetID, nil
@@ -159,8 +152,7 @@ func findOrCreateUserAsset(ctx context.Context, tx pgx.Tx, userID, assetID int64
 		return userAssetID, nil
 	}
 	if !errors.Is(err, pgx.ErrNoRows) {
-		slog.Error("failed to query user_asset", "error", err.Error())
-		return 0, util.NewInternalError("failed to query user asset")
+		return 0, util.NewInternalError("failed to query user asset", err)
 	}
 
 	err = tx.QueryRow(ctx,
@@ -168,8 +160,7 @@ func findOrCreateUserAsset(ctx context.Context, tx pgx.Tx, userID, assetID int64
 		userID, assetID,
 	).Scan(&userAssetID)
 	if err != nil {
-		slog.Error("failed to create user_asset", "error", err.Error())
-		return 0, util.NewInternalError("failed to create user asset")
+		return 0, util.NewInternalError("failed to create user asset", err)
 	}
 
 	return userAssetID, nil
@@ -194,8 +185,7 @@ func recalculateHolding(ctx context.Context, tx pgx.Tx, userAssetID int64) error
 		WHERE user_asset_id = $1
 	`, userAssetID).Scan(&totalQty, &avgPrice, &totalInvested)
 	if err != nil {
-		slog.Error("failed to compute holding aggregates", "error", err.Error())
-		return util.NewInternalError("failed to recalculate holdings")
+		return util.NewInternalError("failed to recalculate holdings", err)
 	}
 
 	_, err = tx.Exec(ctx, `
@@ -208,8 +198,7 @@ func recalculateHolding(ctx context.Context, tx pgx.Tx, userAssetID int64) error
 			    updated_at     = now()
 	`, userAssetID, totalQty, avgPrice, totalInvested)
 	if err != nil {
-		slog.Error("failed to upsert holding", "error", err.Error())
-		return util.NewInternalError("failed to upsert holding")
+		return util.NewInternalError("failed to upsert holding", err)
 	}
 
 	return nil

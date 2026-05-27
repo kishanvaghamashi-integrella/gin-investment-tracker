@@ -2,10 +2,9 @@ package cron
 
 import (
 	"gin-investment-tracker/internal/cron/jobs"
-	assetprice "gin-investment-tracker/internal/external-services/asset-details"
+	assetpricefetcher "gin-investment-tracker/internal/external-services/asset-details-fetcher"
 	repository "gin-investment-tracker/internal/repositories"
-	"log"
-	"log/slog"
+	"gin-investment-tracker/internal/util"
 
 	"github.com/robfig/cron/v3"
 )
@@ -13,25 +12,26 @@ import (
 type CronJobs struct {
 	assetRepo         repository.AssetRepositoryInterface
 	priceDetailRepo   repository.PriceDetailRepositoryInterface
-	assetPriceFetcher *assetprice.AssetPriceService
+	assetPriceFetcher *assetpricefetcher.AssetPriceService
 }
 
-func NewCronJobs(assetRepo repository.AssetRepositoryInterface, priceDetailRepo repository.PriceDetailRepositoryInterface, assetPriceFetcher *assetprice.AssetPriceService) *CronJobs {
+func NewCronJobs(assetRepo repository.AssetRepositoryInterface, priceDetailRepo repository.PriceDetailRepositoryInterface, assetPriceFetcher *assetpricefetcher.AssetPriceService) *CronJobs {
 	return &CronJobs{assetRepo: assetRepo, priceDetailRepo: priceDetailRepo, assetPriceFetcher: assetPriceFetcher}
 }
 
-func (cj *CronJobs) Start() {
+func (cj *CronJobs) Start() error {
 	c := cron.New(cron.WithSeconds())
 
 	// Run at 12:00 AM everyday
 	_, err := c.AddFunc("0 0 0 * * *", func() {
-		slog.Info("Cron Job Started")
+		util.Logger.Infow("cron job started")
 		jobs.FetchPriceDetailsJob(cj.assetRepo, cj.priceDetailRepo, cj.assetPriceFetcher)
-		slog.Info("Cron Job Finished")
+		util.Logger.Infow("cron job finished")
 	})
 	if err != nil {
-		log.Fatal(err)
+		return err
 	}
 
 	c.Start()
+	return nil
 }

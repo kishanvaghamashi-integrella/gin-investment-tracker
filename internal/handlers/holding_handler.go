@@ -3,7 +3,6 @@ package handler
 import (
 	service "gin-investment-tracker/internal/services"
 	"gin-investment-tracker/internal/util"
-	"log/slog"
 	"net/http"
 	"strings"
 
@@ -39,18 +38,19 @@ func (h *HoldingHandler) SetRoutes(rg *gin.RouterGroup) {
 // @Router /api/holdings [get]
 // @Security CookieAuth
 func (h *HoldingHandler) Get(c *gin.Context) {
-	slog.Info("request started", "handler", "HoldingHandler.Get", "method", c.Request.Method, "path", c.Request.URL.Path)
+	log := util.FromContext(c.Request.Context()).With("handler", "HoldingHandler.Get")
+	log.Infow("request started", "method", c.Request.Method, "path", c.Request.URL.Path)
 
 	userID, ok := util.GetUserIDFromContext(c)
 	if !ok {
-		slog.Warn("failed to parse user ID from context", "handler", "HoldingHandler.Get")
+		log.Warnw("failed to parse user ID from context")
 		util.SendErrorResponse(c, http.StatusBadRequest, "error while parsing the userId")
 		return
 	}
 
 	limit, offset, err := parsePaginationParams(c)
 	if err != nil {
-		slog.Warn("invalid pagination params", "handler", "HoldingHandler.Get", "userID", userID, "error", err)
+		log.Warnw("invalid pagination params", "user_id", userID, "error", err)
 		util.SendErrorResponse(c, http.StatusBadRequest, err.Error())
 		return
 	}
@@ -60,10 +60,10 @@ func (h *HoldingHandler) Get(c *gin.Context) {
 
 	holdings, err := h.service.GetAllByUserID(c.Request.Context(), userID, limit, offset, sortByQuery, assetNameQuery)
 	if err != nil {
-		util.HandleError(c, err, "HoldingHandler.Get")
+		util.HandleError(c, err, log)
 		return
 	}
 
-	slog.Info("holdings retrieved", "handler", "HoldingHandler.Get", "userID", userID, "count", len(holdings), "limit", limit, "offset", offset)
+	log.Infow("holdings retrieved", "user_id", userID, "count", len(holdings), "limit", limit, "offset", offset)
 	util.SendResponse(c, http.StatusOK, holdings)
 }

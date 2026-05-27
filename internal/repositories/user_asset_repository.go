@@ -5,7 +5,6 @@ import (
 	"fmt"
 	model "gin-investment-tracker/internal/models"
 	"gin-investment-tracker/internal/util"
-	"log/slog"
 
 	"github.com/jackc/pgx/v5"
 	"github.com/jackc/pgx/v5/pgxpool"
@@ -29,8 +28,7 @@ func (r *UserAssetRepository) Create(ctx context.Context, userAsset *model.UserA
 	err := r.db.QueryRow(ctx, query, userAsset.UserID, userAsset.AssetID).
 		Scan(&userAsset.ID, &userAsset.CreatedAt)
 	if err != nil {
-		slog.Error("failed to create user asset", "error", err.Error())
-		return util.NewInternalError("failed to create user asset")
+		return util.NewInternalError("failed to create user asset", err)
 	}
 
 	return nil
@@ -47,8 +45,7 @@ func (r *UserAssetRepository) GetByUserID(ctx context.Context, userID int64, lim
 
 	rows, err := r.db.Query(ctx, query, userID, limit, offset)
 	if err != nil {
-		slog.Error("failed to list user assets", "error", err.Error())
-		return nil, util.NewInternalError("failed to list user assets")
+		return nil, util.NewInternalError("failed to list user assets", err)
 	}
 	defer rows.Close()
 
@@ -56,15 +53,13 @@ func (r *UserAssetRepository) GetByUserID(ctx context.Context, userID int64, lim
 	for rows.Next() {
 		var ua model.UserAsset
 		if err := rows.Scan(&ua.ID, &ua.UserID, &ua.AssetID, &ua.CreatedAt); err != nil {
-			slog.Error("failed to scan user asset row", "error", err.Error())
-			return nil, util.NewInternalError("failed to list user assets")
+			return nil, util.NewInternalError("failed to list user assets", err)
 		}
 		userAssets = append(userAssets, ua)
 	}
 
 	if err := rows.Err(); err != nil {
-		slog.Error("failed during user asset row iteration", "error", err.Error())
-		return nil, util.NewInternalError("failed to list user assets")
+		return nil, util.NewInternalError("failed to list user assets", err)
 	}
 
 	return userAssets, nil
@@ -75,8 +70,7 @@ func (r *UserAssetRepository) Delete(ctx context.Context, id, userID int64) erro
 
 	res, err := r.db.Exec(ctx, query, id, userID)
 	if err != nil {
-		slog.Error("failed to delete user asset", "error", err.Error())
-		return util.NewInternalError("failed to delete user asset")
+		return util.NewInternalError("failed to delete user asset", err)
 	}
 
 	if res.RowsAffected() == 0 {
@@ -91,8 +85,7 @@ func (r *UserAssetRepository) IsUserAssetExists(ctx context.Context, userID int6
 
 	var exists bool
 	if err := r.db.QueryRow(ctx, query, userID, assetID).Scan(&exists); err != nil {
-		slog.Error("failed to check asset existence", "error", err.Error())
-		return false, util.NewInternalError("failed to check asset existence")
+		return false, util.NewInternalError("failed to check asset existence", err)
 	}
 
 	return exists, nil
@@ -103,8 +96,7 @@ func (r *UserAssetRepository) ExistsByID(ctx context.Context, id int64) (bool, e
 
 	var exists bool
 	if err := r.db.QueryRow(ctx, query, id).Scan(&exists); err != nil {
-		slog.Error("failed to check user asset existence", "error", err.Error())
-		return false, util.NewInternalError("failed to check user asset existence")
+		return false, util.NewInternalError("failed to check user asset existence", err)
 	}
 
 	return exists, nil
@@ -118,8 +110,7 @@ func (r *UserAssetRepository) GetIdByUserIdAssetId(ctx context.Context, userID, 
 		if err == pgx.ErrNoRows {
 			return nil, nil
 		}
-		slog.Error("failed to retrieve userAssetID", "error", err.Error())
-		return nil, util.NewInternalError("failed to retrieve userAssetID")
+		return nil, util.NewInternalError("failed to retrieve userAssetID", err)
 	}
 	return &userAssetId, nil
 }

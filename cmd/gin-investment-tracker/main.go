@@ -5,7 +5,7 @@ import (
 	_ "gin-investment-tracker/docs"
 	"gin-investment-tracker/internal/db"
 	"gin-investment-tracker/internal/server"
-	"log"
+	"gin-investment-tracker/internal/util"
 	"os"
 	"time"
 
@@ -25,20 +25,33 @@ import (
 
 func main() {
 	if env := godotenv.Load(); env != nil {
-		log.Fatal("Error loading .env file")
+		util.Logger.Errorw("failed to load .env file", "error", env)
+		os.Exit(1)
 		return
 	}
+
+	util.InitLogger()
+	defer util.SyncLogger()
 
 	ctx, cancel := context.WithTimeout(context.Background(), 5*time.Second)
 	defer cancel()
 
 	dbPool, err := db.Connect(ctx, os.Getenv("DATABASE_URL"))
 	if err != nil {
-		log.Fatalf("Error while connecting DB %s", err.Error())
+		util.Logger.Errorw("failed while connecting db", "error", err)
+		os.Exit(1)
 		return
 	}
 
 	r := gin.Default()
-	server.RegisterRoutes(r, dbPool)
-	r.Run(":8080")
+	if err := server.RegisterRoutes(r, dbPool); err != nil {
+		util.Logger.Errorw("failed to register routes", "error", err)
+		os.Exit(1)
+		return
+	}
+
+	if err := r.Run(":8080"); err != nil {
+		util.Logger.Errorw("server failed to run", "error", err)
+		os.Exit(1)
+	}
 }

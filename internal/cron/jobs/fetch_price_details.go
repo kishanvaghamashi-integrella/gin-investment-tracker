@@ -2,26 +2,28 @@ package jobs
 
 import (
 	"context"
-	assetprice "gin-investment-tracker/internal/external-services/asset-details"
+	assetpricefetcher "gin-investment-tracker/internal/external-services/asset-details-fetcher"
 	model "gin-investment-tracker/internal/models"
 	repository "gin-investment-tracker/internal/repositories"
-	"log/slog"
+	"gin-investment-tracker/internal/util"
 	"time"
 )
 
-func FetchPriceDetailsJob(assetRepo repository.AssetRepositoryInterface, priceDetailRepo repository.PriceDetailRepositoryInterface, assetPriceFetcher *assetprice.AssetPriceService) {
+func FetchPriceDetailsJob(assetRepo repository.AssetRepositoryInterface, priceDetailRepo repository.PriceDetailRepositoryInterface, assetPriceFetcher *assetpricefetcher.AssetPriceService) {
+	log := util.Logger.With("job", "FetchPriceDetailsJob")
+	logCtx := util.WithLogger(context.Background(), log)
+
 	// 1. fetch all the assets by limit and offset
 	limit := 50
 	offset := 0
 
-	for true {
-		ctx, cancel := context.WithTimeout(context.Background(), 10*time.Second)
-		defer cancel()
-
+	for {
+		ctx, cancel := context.WithTimeout(logCtx, 10*time.Second)
 		assets, err := assetRepo.GetAll(ctx, limit, offset)
+		cancel()
 		offset += limit
 		if err != nil {
-			slog.Error("Failed to fetch one batch of assets from DB", "limit", limit, "offset", offset-limit)
+			log.Errorw("Failed to fetch one batch of assets from DB", "limit", limit, "offset", offset-limit, "error", err)
 			continue
 		}
 		if len(assets) == 0 {
@@ -32,13 +34,13 @@ func FetchPriceDetailsJob(assetRepo repository.AssetRepositoryInterface, priceDe
 		var priceDetailList []model.PriceDetail
 		for _, asset := range assets {
 			if asset.ExternalPlatformID == nil {
-				slog.Error("Failed to fetch price value for asset: missing external platform ID", "asset_id", asset.ID, "instrument_type", asset.InstrumentType)
+				log.Warnw("skipping asset: missing external platform id", "asset_id", asset.ID, "instrument_type", asset.InstrumentType)
 				continue
 			}
 
-			price, prevPrice, err := assetPriceFetcher.FetchPrice(asset.InstrumentType, *asset.ExternalPlatformID)
+			price, prevPrice, err := assetPriceFetcher.FetchAssetPrice(logCtx, asset.InstrumentType, *asset.ExternalPlatformID)
 			if err != nil {
-				slog.Error("Failed to fetch price value for asset", "external platform ID", asset.ExternalPlatformID)
+				log.Errorw("Failed to fetch price value for asset", "external_platform_id", asset.ExternalPlatformID, "error", err)
 				continue
 			}
 
@@ -54,13 +56,13 @@ func FetchPriceDetailsJob(assetRepo repository.AssetRepositoryInterface, priceDe
 		}
 
 		// 3. add that price details into price_details table
-		ctx2, cancel2 := context.WithTimeout(context.Background(), 10*time.Second)
-		defer cancel2()
-
-		if err = priceDetailRepo.UpsertPriceDetails(ctx2, priceDetailList); err != nil {
-			slog.Error("Failed to add price value for into the DB", "limit", limit, "offset", offset-limit, "error", err.Error())
+		ctx2, cancel2 := context.WithTimeout(logCtx, 10*time.Second)
+		err = priceDetailRepo.UpsertPriceDetails(ctx2, priceDetailList)
+		cancel2()
+		if err != nil {
+			log.Errorw("Failed to add price value for into the DB", "limit", limit, "offset", offset-limit, "error", err)
 			continue
 		}
-		slog.Info("Added price details successfully", "limit", limit, "offset", offset-limit)
+		log.Infow("Added price details successfully", "limit", limit, "offset", offset-limit)
 	}
 }

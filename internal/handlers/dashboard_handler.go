@@ -3,7 +3,6 @@ package handler
 import (
 	service "gin-investment-tracker/internal/services"
 	"gin-investment-tracker/internal/util"
-	"log/slog"
 	"net/http"
 
 	"github.com/gin-gonic/gin"
@@ -33,21 +32,22 @@ func (h *DashboardHandler) SetRoutes(rg *gin.RouterGroup) {
 // @Router /api/dashboard [get]
 // @Security CookieAuth
 func (h *DashboardHandler) GetDashboardData(c *gin.Context) {
-	slog.Info("request started", "handler", "DashboardHandler.GetDashboardData", "method", c.Request.Method, "path", c.Request.URL.Path)
+	log := util.FromContext(c.Request.Context()).With("handler", "DashboardHandler.GetDashboardData")
+	log.Infow("request started", "method", c.Request.Method, "path", c.Request.URL.Path)
 
 	userID, ok := util.GetUserIDFromContext(c)
 	if !ok {
-		slog.Warn("failed to parse user ID from context", "handler", "DashboardHandler.GetDashboardData")
+		log.Warnw("failed to parse user ID from context")
 		util.SendErrorResponse(c, http.StatusBadRequest, "error while parsing the userId")
 		return
 	}
 
 	data, err := h.service.GetDashboardData(c.Request.Context(), userID)
 	if err != nil {
-		util.HandleError(c, err, "DashboardHandler.GetDashboardData")
+		util.HandleError(c, err, log)
 		return
 	}
 
-	slog.Info("dashboard data retrieved", "handler", "DashboardHandler.GetDashboardData", "userID", userID)
+	log.Infow("dashboard data retrieved", "user_id", userID)
 	util.SendResponse(c, http.StatusOK, data)
 }

@@ -2,7 +2,7 @@ package db
 
 import (
 	"context"
-	"log/slog"
+	"gin-investment-tracker/internal/util"
 
 	"github.com/jackc/pgx/v5/pgxpool"
 )
@@ -26,6 +26,6 @@ func Connect(ctx context.Context, connString string) (*pgxpool.Pool, error) {
 		return nil, err
 	}
 
-	slog.Info("Connected with Database")
+	util.Logger.Infow("Connected with Database")
 	return pool, nil
 }

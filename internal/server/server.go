@@ -1,8 +1,9 @@
 package server
 
 import (
+	"fmt"
 	"gin-investment-tracker/internal/cron"
-	assetprice "gin-investment-tracker/internal/external-services/asset-details"
+	assetpricefetcher "gin-investment-tracker/internal/external-services/asset-details-fetcher"
 	casparser "gin-investment-tracker/internal/external-services/cas-parser"
 	handler "gin-investment-tracker/internal/handlers"
 	middleware "gin-investment-tracker/internal/middlewares"
@@ -17,12 +18,12 @@ import (
 	ginSwagger "github.com/swaggo/gin-swagger"
 )
 
-func RegisterRoutes(r *gin.Engine, db *pgxpool.Pool) {
+func RegisterRoutes(r *gin.Engine, db *pgxpool.Pool) error {
 	// 3rd party services
 	casParser := casparser.NewCasParserPythonApi()
-	mfPriceFetcher := assetprice.NewMfapiFetcher()
-	stockPriceFetcher := assetprice.NewYahooStockFetcher()
-	assetPriceFetcher := assetprice.NewAssetPriceService(stockPriceFetcher, mfPriceFetcher)
+	mfPriceFetcher := assetpricefetcher.NewMfapiFetcher()
+	stockPriceFetcher := assetpricefetcher.NewYahooStockFetcher()
+	assetPriceFetcher := assetpricefetcher.NewAssetPriceService(stockPriceFetcher, mfPriceFetcher)
 
 	// Repositories
 	userRepository := repository.NewUserRepository(db)
@@ -54,7 +55,9 @@ func RegisterRoutes(r *gin.Engine, db *pgxpool.Pool) {
 
 	// Cron Job
 	cronJob := cron.NewCronJobs(assetRepository, priceDetailRepository, assetPriceFetcher)
-	cronJob.Start()
+	if err := cronJob.Start(); err != nil {
+		return fmt.Errorf("failed to start cron jobs: %w", err)
+	}
 
 	// routes
 	if isDevelopmentEnvironment() {
@@ -62,6 +65,7 @@ func RegisterRoutes(r *gin.Engine, db *pgxpool.Pool) {
 	}
 
 	r.Use(CORSMiddleware())
+	r.Use(middleware.RequestID())
 
 	unprotectedRouter := r.Group("/api")
 	userHandler.SetRoutes(unprotectedRouter)
@@ -76,6 +80,8 @@ func RegisterRoutes(r *gin.Engine, db *pgxpool.Pool) {
 		casStatementHandler.SetRoutes(protectedRouter)
 		dashboardHandler.SetRoutes(protectedRouter)
 	}
+
+	return nil
 }
 
 func isDevelopmentEnvironment() bool {
@@ -85,7 +91,7 @@ func isDevelopmentEnvironment() bool {
 
 func CORSMiddleware() gin.HandlerFunc {
 	return func(c *gin.Context) {
-		c.Writer.Header().Set("Access-Control-Allow-Origin", "http://localhost:3000")
+		c.Writer.Header().Set("Access-Control-Allow-Origin", "http://localhost:5173")
 		c.Writer.Header().Set("Access-Control-Allow-Credentials", "true")
 		c.Writer.Header().Set("Access-Control-Allow-Headers", "Content-Type, Authorization")
 		c.Writer.Header().Set("Access-Control-Allow-Methods", "GET, POST, PUT, DELETE, OPTIONS")

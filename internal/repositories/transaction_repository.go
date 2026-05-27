@@ -6,7 +6,6 @@ import (
 	dto "gin-investment-tracker/internal/dtos"
 	model "gin-investment-tracker/internal/models"
 	"gin-investment-tracker/internal/util"
-	"log/slog"
 
 	"github.com/jackc/pgx/v5"
 	"github.com/jackc/pgx/v5/pgxpool"
@@ -23,8 +22,7 @@ func NewTransactionRepository(db *pgxpool.Pool) *TransactionRepository {
 func (r *TransactionRepository) Create(ctx context.Context, txn *model.Transaction, holding *model.Holding, isUpdate bool) error {
 	tx, err := r.db.Begin(ctx)
 	if err != nil {
-		slog.Error("failed to begin transaction", "error", err.Error())
-		return util.NewInternalError("failed to begin transaction")
+		return util.NewInternalError("failed to begin transaction", err)
 	}
 	defer tx.Rollback(ctx)
 
@@ -36,8 +34,7 @@ func (r *TransactionRepository) Create(ctx context.Context, txn *model.Transacti
 	err = tx.QueryRow(ctx, txnQuery, txn.UserAssetID, txn.TxnType, txn.Quantity, txn.Price, txn.TxnDate).
 		Scan(&txn.ID, &txn.CreatedAt)
 	if err != nil {
-		slog.Error("failed to insert transaction", "error", err.Error())
-		return util.NewInternalError("failed to create transaction")
+		return util.NewInternalError("failed to create transaction", err)
 	}
 
 	if isUpdate {
@@ -50,8 +47,7 @@ func (r *TransactionRepository) Create(ctx context.Context, txn *model.Transacti
 		err = tx.QueryRow(ctx, holdingQuery, holding.TotalQuantity, holding.AveragePrice, holding.TotalInvested, holding.UserAssetID).
 			Scan(&holding.UpdatedAt)
 		if err != nil {
-			slog.Error("failed to update holding", "error", err.Error())
-			return util.NewInternalError("failed to update holding")
+			return util.NewInternalError("failed to update holding", err)
 		}
 	} else {
 		holdingQuery := `
@@ -62,14 +58,12 @@ func (r *TransactionRepository) Create(ctx context.Context, txn *model.Transacti
 		err = tx.QueryRow(ctx, holdingQuery, holding.UserAssetID, holding.TotalQuantity, holding.AveragePrice, holding.TotalInvested).
 			Scan(&holding.ID, &holding.UpdatedAt)
 		if err != nil {
-			slog.Error("failed to insert holding", "error", err.Error())
-			return util.NewInternalError("failed to create holding")
+			return util.NewInternalError("failed to create holding", err)
 		}
 	}
 
 	if err := tx.Commit(ctx); err != nil {
-		slog.Error("failed to commit transaction", "error", err.Error())
-		return util.NewInternalError("failed to commit transaction")
+		return util.NewInternalError("failed to commit transaction", err)
 	}
 
 	return nil
@@ -78,8 +72,7 @@ func (r *TransactionRepository) Create(ctx context.Context, txn *model.Transacti
 func (r *TransactionRepository) queryTransactionsToFetch(ctx context.Context, query string, args ...any) ([]dto.TransactionResponseDto, error) {
 	rows, err := r.db.Query(ctx, query, args...)
 	if err != nil {
-		slog.Error("failed to list transactions", "error", err.Error())
-		return nil, util.NewInternalError("failed to list transactions")
+		return nil, util.NewInternalError("failed to list transactions", err)
 	}
 	defer rows.Close()
 
@@ -87,15 +80,13 @@ func (r *TransactionRepository) queryTransactionsToFetch(ctx context.Context, qu
 	for rows.Next() {
 		var txn dto.TransactionResponseDto
 		if err := rows.Scan(&txn.ID, &txn.UserAssetID, &txn.AssetName, &txn.AssetInstrumentType, &txn.TxnType, &txn.Quantity, &txn.Price, &txn.TxnDate); err != nil {
-			slog.Error("failed to scan transaction row", "error", err.Error())
-			return nil, util.NewInternalError("failed to list transactions")
+			return nil, util.NewInternalError("failed to list transactions", err)
 		}
 		transactions = append(transactions, txn)
 	}
 
 	if err := rows.Err(); err != nil {
-		slog.Error("failed to iterate transaction rows", "error", err.Error())
-		return nil, util.NewInternalError("failed to list transactions")
+		return nil, util.NewInternalError("failed to list transactions", err)
 	}
 
 	return transactions, nil
@@ -141,8 +132,7 @@ func (r *TransactionRepository) GetHoldingsByUserAssetID(ctx context.Context, us
 		if err == pgx.ErrNoRows {
 			return nil, nil
 		}
-		slog.Error("failed to get holding by user asset id", "error", err.Error())
-		return nil, util.NewInternalError("failed to get holding")
+		return nil, util.NewInternalError("failed to get holding", err)
 	}
 
 	return &holding, nil
@@ -162,8 +152,7 @@ func (r *TransactionRepository) GetByID(ctx context.Context, id int64) (*model.T
 		if err == pgx.ErrNoRows {
 			return nil, util.NewNotFoundError(fmt.Sprintf("transaction with id %d not found", id))
 		}
-		slog.Error("failed to get transaction", "error", err.Error())
-		return nil, util.NewInternalError("failed to get transaction")
+		return nil, util.NewInternalError("failed to get transaction", err)
 	}
 
 	return &txn, nil
@@ -178,8 +167,7 @@ func (r *TransactionRepository) Update(ctx context.Context, txn *model.Transacti
 
 	res, err := r.db.Exec(ctx, query, txn.TxnType, txn.Quantity, txn.Price, txn.TxnDate, txn.ID)
 	if err != nil {
-		slog.Error("failed to update transaction", "error", err.Error())
-		return util.NewInternalError("failed to update transaction")
+		return util.NewInternalError("failed to update transaction", err)
 	}
 
 	if res.RowsAffected() == 0 {
@@ -194,8 +182,7 @@ func (r *TransactionRepository) Delete(ctx context.Context, id int64) error {
 
 	res, err := r.db.Exec(ctx, query, id)
 	if err != nil {
-		slog.Error("failed to delete transaction", "error", err.Error())
-		return util.NewInternalError("failed to delete transaction")
+		return util.NewInternalError("failed to delete transaction", err)
 	}
 
 	if res.RowsAffected() == 0 {
