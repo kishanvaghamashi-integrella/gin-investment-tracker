@@ -4,7 +4,7 @@ import (
 	"context"
 	casparser "gin-investment-tracker/internal/external-services/cas-parser"
 	repository "gin-investment-tracker/internal/repositories"
-	"log/slog"
+	"gin-investment-tracker/internal/util"
 	"mime/multipart"
 )
 
@@ -35,17 +35,19 @@ func NewCasStatementService(
 func (s *StatementService) ProcessCasFile(ctx context.Context, file *multipart.FileHeader, filePassword string, userID int64) {
 	bgCtx := context.WithoutCancel(ctx)
 	go func() {
+		log := util.FromContext(bgCtx).With("service", "StatementService.ProcessCasFile", "user_id", userID)
+
 		casStatement, err := s.parser.ProcessCasFile(bgCtx, file, filePassword, userID)
 		if err != nil {
-			slog.Error("Failed to parse the file", "error", err.Error())
+			log.Errorw("Failed to parse the file", "error", err)
 			return
 		}
-		slog.Info("CAS statement converted to JSON successfully.")
+		log.Infow("CAS statement converted to JSON successfully.")
 
 		if err := s.statementRepo.ProcessCASStatement(bgCtx, casStatement, userID); err != nil {
-			slog.Error("Failed to process CAS statement", "error", err.Error())
+			log.Errorw("Failed to process CAS statement", "error", err)
 			return
 		}
-		slog.Info("CAS statement uploaded successfully.", "userID", userID)
+		log.Infow("CAS statement uploaded successfully.")
 	}()
 }

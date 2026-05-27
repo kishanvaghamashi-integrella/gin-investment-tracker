@@ -4,7 +4,6 @@ import (
 	"fmt"
 	service "gin-investment-tracker/internal/services"
 	"gin-investment-tracker/internal/util"
-	"log/slog"
 	"net/http"
 
 	"github.com/gin-gonic/gin"
@@ -37,18 +36,19 @@ func (h *StatementHandler) SetRoutes(rg *gin.RouterGroup) {
 // @Router /api/cas-statement [post]
 // @Security CookieAuth
 func (h *StatementHandler) ProcessCasStatement(c *gin.Context) {
+	log := util.FromContext(c.Request.Context()).With("handler", "StatementHandler.ProcessCasStatement")
 	filePassword := c.PostForm("password")
 
 	file, err := c.FormFile("file")
 	if err != nil {
-		slog.Warn("No cas statement provided", "handler", "StatementHandler.ProcessCasStatement")
+		log.Warnw("No cas statement provided")
 		util.SendErrorResponse(c, http.StatusBadRequest, "No cas statement provided")
 		return
 	}
 
 	userID, ok := util.GetUserIDFromContext(c)
 	if !ok {
-		slog.Warn("failed to parse user ID from context", "handler", "StatementHandler.ProcessCasStatement")
+		log.Warnw("failed to parse user ID from context")
 		util.SendErrorResponse(c, http.StatusBadRequest, "error while parsing the userId")
 		return
 	}

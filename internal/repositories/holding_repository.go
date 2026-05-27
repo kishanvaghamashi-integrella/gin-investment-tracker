@@ -5,7 +5,6 @@ import (
 	"fmt"
 	dto "gin-investment-tracker/internal/dtos"
 	"gin-investment-tracker/internal/util"
-	"log/slog"
 	"strings"
 
 	"github.com/jackc/pgx/v5/pgxpool"
@@ -44,7 +43,6 @@ func (r *HoldingRepository) GetAllByUserID(ctx context.Context, userID int64, li
 
 	rows, err := r.db.Query(ctx, query, userID, limit, offset, "%"+assetNameQuery+"%")
 	if err != nil {
-		slog.Error("failed to list holdings", "error", err.Error())
 		return nil, util.NewInternalError("failed to list holdings")
 	}
 	defer rows.Close()
@@ -53,14 +51,12 @@ func (r *HoldingRepository) GetAllByUserID(ctx context.Context, userID int64, li
 	for rows.Next() {
 		var h dto.HoldingResponseDto
 		if err := rows.Scan(&h.ID, &h.AssetID, &h.AssetName, &h.AssetInstrumentType, &h.Quantity, &h.AveragePrice, &h.CurrentPrice, &h.PrevDayPrice, &h.InvestedCapital); err != nil {
-			slog.Error("failed to scan holding row", "error", err.Error())
 			return nil, util.NewInternalError("failed to list holdings")
 		}
 		holdings = append(holdings, h)
 	}
 
 	if err := rows.Err(); err != nil {
-		slog.Error("failed to iterate holding rows", "error", err.Error())
 		return nil, util.NewInternalError("failed to list holdings")
 	}
 

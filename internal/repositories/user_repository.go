@@ -5,7 +5,6 @@ import (
 	"fmt"
 	model "gin-investment-tracker/internal/models"
 	"gin-investment-tracker/internal/util"
-	"log/slog"
 	"time"
 
 	"github.com/jackc/pgx/v5"
@@ -51,7 +50,6 @@ func (r *UserRepository) Delete(ctx context.Context, userId int64) error {
 
 	res, err := r.db.Exec(ctx, query, userId, time.Now())
 	if err != nil {
-		slog.Error(err.Error())
 		return util.NewInternalError("failed to delete user")
 	}
 
@@ -144,7 +142,6 @@ func (r *UserRepository) ExistsByID(ctx context.Context, id int64) (bool, error)
 
 	var exists bool
 	if err := r.db.QueryRow(ctx, query, id).Scan(&exists); err != nil {
-		slog.Error("failed to check user existence", "error", err.Error())
 		return false, util.NewInternalError("failed to check user existence")
 	}
 

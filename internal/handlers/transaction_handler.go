@@ -6,7 +6,6 @@ import (
 	dto "gin-investment-tracker/internal/dtos"
 	service "gin-investment-tracker/internal/services"
 	"gin-investment-tracker/internal/util"
-	"log/slog"
 	"net/http"
 	"strconv"
 
@@ -44,35 +43,36 @@ func (h *TransactionHandler) SetRoutes(rg *gin.RouterGroup) {
 // @Router /api/transactions [post]
 // @Security CookieAuth
 func (h *TransactionHandler) Create(c *gin.Context) {
-	slog.Info("request started", "handler", "TransactionHandler.Create", "method", c.Request.Method, "path", c.Request.URL.Path)
+	log := util.FromContext(c.Request.Context()).With("handler", "TransactionHandler.Create")
+	log.Infow("request started", "method", c.Request.Method, "path", c.Request.URL.Path)
 
 	var req dto.CreateTransactionRequest
 	if err := c.ShouldBindJSON(&req); err != nil {
 		var ve validator.ValidationErrors
 		if errors.As(err, &ve) {
-			slog.Warn("validation failed", "handler", "TransactionHandler.Create", "error", ve)
+			log.Warnw("validation failed", "error", ve)
 			util.SendErrorResponse(c, http.StatusBadRequest, util.FormatValidationErrors(err))
 			return
 		}
-		slog.Warn("failed to bind request body", "handler", "TransactionHandler.Create", "error", err)
+		log.Warnw("failed to bind request body", "error", err)
 		util.SendErrorResponse(c, http.StatusBadRequest, err.Error())
 		return
 	}
 
 	userID, ok := util.GetUserIDFromContext(c)
 	if !ok {
-		slog.Warn("failed to parse user ID from context", "handler", "TransactionHandler.Create")
+		log.Warnw("failed to parse user ID from context")
 		util.SendErrorResponse(c, http.StatusBadRequest, "error while parsing the userId")
 		return
 	}
 
 	txn, err := h.service.Create(c.Request.Context(), &req, userID)
 	if err != nil {
-		util.HandleError(c, err, "TransactionHandler.Create")
+		util.HandleError(c, err, log)
 		return
 	}
 
-	slog.Info("transaction created", "handler", "TransactionHandler.Create", "transactionID", txn.ID)
+	log.Infow("transaction created", "transaction_id", txn.ID)
 	util.SendResponse(c, http.StatusCreated, map[string]any{
 		"message":     fmt.Sprintf("transaction created with id %d", txn.ID),
 		"transaction": txn,
@@ -94,18 +94,19 @@ func (h *TransactionHandler) Create(c *gin.Context) {
 // @Router /api/transactions [get]
 // @Security CookieAuth
 func (h *TransactionHandler) GetAll(c *gin.Context) {
-	slog.Info("request started", "handler", "TransactionHandler.GetAllByUserID", "method", c.Request.Method, "path", c.Request.URL.Path)
+	log := util.FromContext(c.Request.Context()).With("handler", "TransactionHandler.GetAllByUserID")
+	log.Infow("request started", "method", c.Request.Method, "path", c.Request.URL.Path)
 
 	userID, ok := util.GetUserIDFromContext(c)
 	if !ok {
-		slog.Warn("failed to parse user ID from context", "handler", "TransactionHandler.GetAllByUserID")
+		log.Warnw("failed to parse user ID from context")
 		util.SendErrorResponse(c, http.StatusBadRequest, "error while parsing the userId")
 		return
 	}
 
 	limit, offset, err := parsePaginationParams(c)
 	if err != nil {
-		slog.Warn("invalid pagination params", "handler", "TransactionHandler.GetAllByUserID", "error", err)
+		log.Warnw("invalid pagination params", "error", err)
 		util.SendErrorResponse(c, http.StatusBadRequest, err.Error())
 		return
 	}
@@ -120,11 +121,11 @@ func (h *TransactionHandler) GetAll(c *gin.Context) {
 
 	transactions, err := h.service.GetAllByUserIDAndAssetID(c.Request.Context(), userID, assetID, limit, offset)
 	if err != nil {
-		util.HandleError(c, err, "TransactionHandler.GetAllByUserID")
+		util.HandleError(c, err, log)
 		return
 	}
 
-	slog.Info("transactions retrieved", "handler", "TransactionHandler.GetAllByUserID", "userID", userID, "count", len(transactions))
+	log.Infow("transactions retrieved", "user_id", userID, "count", len(transactions))
 	util.SendResponse(c, http.StatusOK, transactions)
 }
 
@@ -143,11 +144,12 @@ func (h *TransactionHandler) GetAll(c *gin.Context) {
 // @Router /api/transactions/{txnId} [put]
 // @Security CookieAuth
 func (h *TransactionHandler) Update(c *gin.Context) {
-	slog.Info("request started", "handler", "TransactionHandler.Update", "method", c.Request.Method, "path", c.Request.URL.Path)
+	log := util.FromContext(c.Request.Context()).With("handler", "TransactionHandler.Update")
+	log.Infow("request started", "method", c.Request.Method, "path", c.Request.URL.Path)
 
 	id, err := parseIntegerID(c, "txnId")
 	if err != nil {
-		slog.Warn("invalid transaction ID", "handler", "TransactionHandler.Update", "txnId", c.Param("txnId"))
+		log.Warnw("invalid transaction ID", "txn_id", c.Param("txnId"))
 		util.SendErrorResponse(c, http.StatusBadRequest, "invalid transaction id")
 		return
 	}
@@ -156,21 +158,21 @@ func (h *TransactionHandler) Update(c *gin.Context) {
 	if err := c.ShouldBindJSON(&req); err != nil {
 		var ve validator.ValidationErrors
 		if errors.As(err, &ve) {
-			slog.Warn("validation failed", "handler", "TransactionHandler.Update", "error", ve)
+			log.Warnw("validation failed", "error", ve)
 			util.SendErrorResponse(c, http.StatusBadRequest, util.FormatValidationErrors(err))
 			return
 		}
-		slog.Warn("failed to bind request body", "handler", "TransactionHandler.Update", "error", err)
+		log.Warnw("failed to bind request body", "error", err)
 		util.SendErrorResponse(c, http.StatusBadRequest, err.Error())
 		return
 	}
 
 	if err := h.service.Update(c.Request.Context(), id, &req); err != nil {
-		util.HandleError(c, err, "TransactionHandler.Update")
+		util.HandleError(c, err, log)
 		return
 	}
 
-	slog.Info("transaction updated", "handler", "TransactionHandler.Update", "transactionID", id)
+	log.Infow("transaction updated", "transaction_id", id)
 	util.SendResponse(c, http.StatusOK, map[string]string{"message": "transaction updated successfully"})
 }
 
@@ -187,20 +189,21 @@ func (h *TransactionHandler) Update(c *gin.Context) {
 // @Router /api/transactions/{txnId} [delete]
 // @Security CookieAuth
 func (h *TransactionHandler) Delete(c *gin.Context) {
-	slog.Info("request started", "handler", "TransactionHandler.Delete", "method", c.Request.Method, "path", c.Request.URL.Path)
+	log := util.FromContext(c.Request.Context()).With("handler", "TransactionHandler.Delete")
+	log.Infow("request started", "method", c.Request.Method, "path", c.Request.URL.Path)
 
 	id, err := parseIntegerID(c, "txnId")
 	if err != nil {
-		slog.Warn("invalid transaction ID", "handler", "TransactionHandler.Delete", "txnId", c.Param("txnId"))
+		log.Warnw("invalid transaction ID", "txn_id", c.Param("txnId"))
 		util.SendErrorResponse(c, http.StatusBadRequest, "invalid transaction id")
 		return
 	}
 
 	if err := h.service.Delete(c.Request.Context(), id); err != nil {
-		util.HandleError(c, err, "TransactionHandler.Delete")
+		util.HandleError(c, err, log)
 		return
 	}
 
-	slog.Info("transaction deleted", "handler", "TransactionHandler.Delete", "transactionID", id)
+	log.Infow("transaction deleted", "transaction_id", id)
 	util.SendResponse(c, http.StatusOK, map[string]string{"message": "transaction deleted successfully"})
 }

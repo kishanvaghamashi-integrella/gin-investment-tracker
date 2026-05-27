@@ -5,7 +5,7 @@ import (
 	assetprice "gin-investment-tracker/internal/external-services/asset-details"
 	model "gin-investment-tracker/internal/models"
 	repository "gin-investment-tracker/internal/repositories"
-	"log/slog"
+	"gin-investment-tracker/internal/util"
 	"time"
 )
 
@@ -14,14 +14,13 @@ func FetchPriceDetailsJob(assetRepo repository.AssetRepositoryInterface, priceDe
 	limit := 50
 	offset := 0
 
-	for true {
+	for {
 		ctx, cancel := context.WithTimeout(context.Background(), 10*time.Second)
-		defer cancel()
-
 		assets, err := assetRepo.GetAll(ctx, limit, offset)
+		cancel()
 		offset += limit
 		if err != nil {
-			slog.Error("Failed to fetch one batch of assets from DB", "limit", limit, "offset", offset-limit)
+			util.Logger.Errorw("Failed to fetch one batch of assets from DB", "limit", limit, "offset", offset-limit, "error", err)
 			continue
 		}
 		if len(assets) == 0 {
@@ -32,13 +31,13 @@ func FetchPriceDetailsJob(assetRepo repository.AssetRepositoryInterface, priceDe
 		var priceDetailList []model.PriceDetail
 		for _, asset := range assets {
 			if asset.ExternalPlatformID == nil {
-				slog.Error("Failed to fetch price value for asset: missing external platform ID", "asset_id", asset.ID, "instrument_type", asset.InstrumentType)
+				util.Logger.Warnw("skipping asset: missing external platform id", "asset_id", asset.ID, "instrument_type", asset.InstrumentType)
 				continue
 			}
 
 			price, prevPrice, err := assetPriceFetcher.FetchPrice(asset.InstrumentType, *asset.ExternalPlatformID)
 			if err != nil {
-				slog.Error("Failed to fetch price value for asset", "external platform ID", asset.ExternalPlatformID)
+				util.Logger.Errorw("Failed to fetch price value for asset", "external_platform_id", asset.ExternalPlatformID, "error", err)
 				continue
 			}
 
@@ -55,12 +54,12 @@ func FetchPriceDetailsJob(assetRepo repository.AssetRepositoryInterface, priceDe
 
 		// 3. add that price details into price_details table
 		ctx2, cancel2 := context.WithTimeout(context.Background(), 10*time.Second)
-		defer cancel2()
-
-		if err = priceDetailRepo.UpsertPriceDetails(ctx2, priceDetailList); err != nil {
-			slog.Error("Failed to add price value for into the DB", "limit", limit, "offset", offset-limit, "error", err.Error())
+		err = priceDetailRepo.UpsertPriceDetails(ctx2, priceDetailList)
+		cancel2()
+		if err != nil {
+			util.Logger.Errorw("Failed to add price value for into the DB", "limit", limit, "offset", offset-limit, "error", err)
 			continue
 		}
-		slog.Info("Added price details successfully", "limit", limit, "offset", offset-limit)
+		util.Logger.Infow("Added price details successfully", "limit", limit, "offset", offset-limit)
 	}
 }

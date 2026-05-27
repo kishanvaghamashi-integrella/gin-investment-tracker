@@ -7,7 +7,6 @@ import (
 
 	dto "gin-investment-tracker/internal/dtos"
 	"gin-investment-tracker/internal/util"
-	"log/slog"
 )
 
 type DashboardRepository struct {
@@ -38,7 +37,6 @@ func (r *DashboardRepository) GetDashboardData(ctx context.Context, userID int64
 		&prev,
 		&total,
 	); err != nil {
-		slog.Error("failed to fetch dashboard data quick insights of portfolio", "error", err.Error())
 		return nil, util.NewInternalError("failed to fetch dashboard data")
 	}
 	dashboardDataDto.CurrentInvestmentValue = &curr
@@ -65,7 +63,6 @@ func (r *DashboardRepository) GetDashboardData(ctx context.Context, userID int64
 	`
 	rows1, err := r.db.Query(ctx, query, userID)
 	if err != nil {
-		slog.Error("failed to fetch top holdings data for dashboard", "error", err.Error())
 		return nil, util.NewInternalError("failed to fetch dashboard data")
 	}
 
@@ -82,7 +79,6 @@ func (r *DashboardRepository) GetDashboardData(ctx context.Context, userID int64
 			&h.CurrentCapital,
 		); err != nil {
 			rows1.Close()
-			slog.Error("failed to scan holding row", "error", err.Error())
 			return nil, util.NewInternalError("failed to fetch dashboard data")
 		}
 		holdings = append(holdings, h)
@@ -90,7 +86,6 @@ func (r *DashboardRepository) GetDashboardData(ctx context.Context, userID int64
 	rows1.Close()
 
 	if err := rows1.Err(); err != nil {
-		slog.Error("failed to iterate holding rows", "error", err.Error())
 		return nil, util.NewInternalError("failed to fetch dashboard data")
 	}
 	dashboardDataDto.TopHoldings = holdings
@@ -113,7 +108,6 @@ func (r *DashboardRepository) GetDashboardData(ctx context.Context, userID int64
 	`
 	rows2, err := r.db.Query(ctx, query, userID)
 	if err != nil {
-		slog.Error("failed to fetch recent transactions data for dashboard", "error", err.Error())
 		return nil, util.NewInternalError("failed to fetch dashboard data")
 	}
 
@@ -129,7 +123,6 @@ func (r *DashboardRepository) GetDashboardData(ctx context.Context, userID int64
 			&t.TxnDate,
 		); err != nil {
 			rows2.Close()
-			slog.Error("failed to scan transaction row", "error", err.Error())
 			return nil, util.NewInternalError("failed to fetch dashboard data")
 		}
 		transactions = append(transactions, t)
@@ -137,7 +130,6 @@ func (r *DashboardRepository) GetDashboardData(ctx context.Context, userID int64
 	rows2.Close()
 
 	if err := rows2.Err(); err != nil {
-		slog.Error("failed to iterate transaction rows", "error", err.Error())
 		return nil, util.NewInternalError("failed to fetch dashboard data")
 	}
 	dashboardDataDto.RecentTransactions = transactions

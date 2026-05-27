@@ -1,15 +1,17 @@
 package util
 
 import (
-	"log/slog"
 	"net/http"
+	"runtime/debug"
 
 	"github.com/gin-gonic/gin"
+	"go.uber.org/zap"
 )
 
 type AppError struct {
 	Code    int
 	Message string
+	stack   string
 }
 
 func (e *AppError) Error() string {
@@ -25,22 +27,22 @@ func NewBadRequestError(msg string) *AppError {
 }
 
 func NewInternalError(msg string) *AppError {
-	return &AppError{Code: http.StatusInternalServerError, Message: msg}
+	return &AppError{Code: http.StatusInternalServerError, Message: msg, stack: string(debug.Stack())}
 }
 
-func HandleError(c *gin.Context, err error, handler string) {
+func HandleError(c *gin.Context, err error, log *zap.SugaredLogger) {
 	if appErr, ok := err.(*AppError); ok {
-		if handler != "" {
+		if log != nil {
 			if appErr.Code >= http.StatusInternalServerError {
-				slog.Error("server error", "handler", handler, "status", appErr.Code, "error", appErr.Message)
+				log.Errorw("server error", "status", appErr.Code, "error", appErr.Message, "request_id", GetRequestIDFromContext(c), "stacktrace", appErr.stack)
 			} else {
-				slog.Warn("client error", "handler", handler, "status", appErr.Code, "error", appErr.Message)
+				log.Warnw("client error", "status", appErr.Code, "error", appErr.Message, "request_id", GetRequestIDFromContext(c))
 			}
 		}
 		SendErrorResponse(c, appErr.Code, appErr.Message)
 	} else {
-		if handler != "" {
-			slog.Error("unexpected error", "handler", handler, "error", err)
+		if log != nil {
+			log.Errorw("unexpected error", "error", err, "request_id", GetRequestIDFromContext(c), "stacktrace", string(debug.Stack()))
 		}
 		SendErrorResponse(c, http.StatusInternalServerError, "unexpected error")
 	}

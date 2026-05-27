@@ -6,7 +6,6 @@ import (
 	"fmt"
 	model "gin-investment-tracker/internal/models"
 	"gin-investment-tracker/internal/util"
-	"log/slog"
 
 	"github.com/jackc/pgx/v5"
 	"github.com/jackc/pgx/v5/pgxpool"
@@ -40,7 +39,6 @@ func (r *AssetRepository) Create(ctx context.Context, asset *model.Asset) error 
 	).Scan(&asset.ID, &asset.CreatedAt)
 
 	if err != nil {
-		slog.Error("failed to create asset", "error", err.Error())
 		return util.NewInternalError("failed to create asset")
 	}
 
@@ -71,7 +69,6 @@ func (r *AssetRepository) GetByID(ctx context.Context, id int64) (*model.Asset, 
 		if errors.Is(err, pgx.ErrNoRows) {
 			return nil, util.NewNotFoundError(fmt.Sprintf("asset with id %d not found", id))
 		}
-		slog.Error("failed to get asset", "error", err.Error())
 		return nil, util.NewInternalError("failed to get asset")
 	}
 
@@ -88,7 +85,6 @@ func (r *AssetRepository) GetAll(ctx context.Context, limit, offset int) ([]mode
 
 	rows, err := r.db.Query(ctx, query, limit, offset)
 	if err != nil {
-		slog.Error("failed to list assets", "error", err.Error())
 		return nil, util.NewInternalError("failed to list assets")
 	}
 	defer rows.Close()
@@ -107,14 +103,12 @@ func (r *AssetRepository) GetAll(ctx context.Context, limit, offset int) ([]mode
 			&asset.ExternalPlatformID,
 			&asset.CreatedAt,
 		); err != nil {
-			slog.Error("failed to scan asset row", "error", err.Error())
 			return nil, util.NewInternalError("failed to list assets")
 		}
 		assets = append(assets, asset)
 	}
 
 	if err := rows.Err(); err != nil {
-		slog.Error("failed while iterating asset rows", "error", err.Error())
 		return nil, util.NewInternalError("failed to list assets")
 	}
 
@@ -142,7 +136,6 @@ func (r *AssetRepository) Update(ctx context.Context, asset *model.Asset) error 
 	)
 
 	if err != nil {
-		slog.Error("failed to update asset", "error", err.Error())
 		return util.NewInternalError("failed to update asset")
 	}
 
@@ -158,7 +151,6 @@ func (r *AssetRepository) Delete(ctx context.Context, id int64) error {
 
 	res, err := r.db.Exec(ctx, query, id)
 	if err != nil {
-		slog.Error("failed to delete asset", "error", err.Error())
 		return util.NewInternalError("failed to delete asset")
 	}
 
@@ -194,7 +186,6 @@ func (r *AssetRepository) GetByISIN(ctx context.Context, isin string) (*model.As
 		if errors.Is(err, pgx.ErrNoRows) {
 			return nil, util.NewNotFoundError(fmt.Sprintf("asset with isin %s not found", isin))
 		}
-		slog.Error("failed to get asset by isin", "error", err.Error())
 		return nil, util.NewInternalError("failed to get asset")
 	}
 
@@ -206,7 +197,6 @@ func (r *AssetRepository) ExistsByID(ctx context.Context, id int64) (bool, error
 
 	var exists bool
 	if err := r.db.QueryRow(ctx, query, id).Scan(&exists); err != nil {
-		slog.Error("failed to check asset existence", "error", err.Error())
 		return false, util.NewInternalError("failed to check asset existence")
 	}
 

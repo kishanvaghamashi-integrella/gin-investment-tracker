@@ -6,7 +6,6 @@ import (
 	model "gin-investment-tracker/internal/models"
 	repository "gin-investment-tracker/internal/repositories"
 	"gin-investment-tracker/internal/util"
-	"log/slog"
 
 	"github.com/jackc/pgx/v5"
 )
@@ -67,7 +66,6 @@ func (s *AuthService) Login(ctx context.Context, req *dto.LoginRequest) (*dto.Lo
 func (s *AuthService) GoogleLogin(ctx context.Context, userInfo *dto.GoogleUserInfo) (*dto.LoginResponse, error) {
 	user, err := s.repo.GetByGoogleID(ctx, userInfo.Sub)
 	if err != nil {
-		slog.Error("got error in auth service", "error", err.Error())
 		return nil, util.NewInternalError("failed to fetch user")
 	}
 

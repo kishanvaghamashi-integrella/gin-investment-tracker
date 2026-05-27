@@ -6,7 +6,6 @@ import (
 	dto "gin-investment-tracker/internal/dtos"
 	service "gin-investment-tracker/internal/services"
 	"gin-investment-tracker/internal/util"
-	"log/slog"
 	"net/http"
 
 	"github.com/gin-gonic/gin"
@@ -43,28 +42,29 @@ func (h *AssetHandler) SetRoutes(r *gin.RouterGroup) {
 // @Router /api/assets/ [post]
 // @Security CookieAuth
 func (h *AssetHandler) Create(c *gin.Context) {
-	slog.Info("request started", "handler", "AssetHandler.Create", "method", c.Request.Method, "path", c.Request.URL.Path)
+	log := util.FromContext(c.Request.Context()).With("handler", "AssetHandler.Create")
+	log.Infow("request started", "method", c.Request.Method, "path", c.Request.URL.Path)
 
 	var req dto.CreateAssetRequest
 	if err := c.ShouldBindJSON(&req); err != nil {
 		var ve validator.ValidationErrors
 		if errors.As(err, &ve) {
-			slog.Warn("validation failed", "handler", "AssetHandler.Create", "error", ve)
+			log.Warnw("validation failed", "error", ve)
 			util.SendErrorResponse(c, http.StatusBadRequest, util.FormatValidationErrors(err))
 			return
 		}
-		slog.Warn("failed to bind request body", "handler", "AssetHandler.Create", "error", err)
+		log.Warnw("failed to bind request body", "error", err)
 		util.SendErrorResponse(c, http.StatusBadRequest, err.Error())
 		return
 	}
 
 	asset, err := h.service.Create(c.Request.Context(), &req)
 	if err != nil {
-		util.HandleError(c, err, "AssetHandler.Create")
+		util.HandleError(c, err, log)
 		return
 	}
 
-	slog.Info("asset created", "handler", "AssetHandler.Create", "assetID", asset.ID)
+	log.Infow("asset created", "asset_id", asset.ID)
 	util.SendResponse(c, http.StatusCreated, map[string]any{
 		"message": fmt.Sprintf("asset created with id %d", asset.ID),
 		"asset":   asset,
@@ -84,22 +84,23 @@ func (h *AssetHandler) Create(c *gin.Context) {
 // @Router /api/assets/{assetId} [get]
 // @Security CookieAuth
 func (h *AssetHandler) GetByID(c *gin.Context) {
-	slog.Info("request started", "handler", "AssetHandler.GetByID", "method", c.Request.Method, "path", c.Request.URL.Path)
+	log := util.FromContext(c.Request.Context()).With("handler", "AssetHandler.GetByID")
+	log.Infow("request started", "method", c.Request.Method, "path", c.Request.URL.Path)
 
 	id, err := parseIntegerID(c, "assetId")
 	if err != nil {
-		slog.Warn("invalid asset ID", "handler", "AssetHandler.GetByID", "assetId", c.Param("assetId"))
+		log.Warnw("invalid asset ID", "asset_id", c.Param("assetId"))
 		util.SendErrorResponse(c, http.StatusBadRequest, "invalid asset id")
 		return
 	}
 
 	asset, err := h.service.GetByID(c.Request.Context(), id)
 	if err != nil {
-		util.HandleError(c, err, "AssetHandler.GetByID")
+		util.HandleError(c, err, log)
 		return
 	}
 
-	slog.Info("asset retrieved", "handler", "AssetHandler.GetByID", "assetID", id)
+	log.Infow("asset retrieved", "asset_id", id)
 	util.SendResponse(c, http.StatusOK, asset)
 }
 
@@ -116,22 +117,23 @@ func (h *AssetHandler) GetByID(c *gin.Context) {
 // @Router /api/assets/ [get]
 // @Security CookieAuth
 func (h *AssetHandler) GetAll(c *gin.Context) {
-	slog.Info("request started", "handler", "AssetHandler.GetAll", "method", c.Request.Method, "path", c.Request.URL.Path)
+	log := util.FromContext(c.Request.Context()).With("handler", "AssetHandler.GetAll")
+	log.Infow("request started", "method", c.Request.Method, "path", c.Request.URL.Path)
 
 	limit, offset, err := parsePaginationParams(c)
 	if err != nil {
-		slog.Warn("invalid pagination params", "handler", "AssetHandler.GetAll", "error", err)
+		log.Warnw("invalid pagination params", "error", err)
 		util.SendErrorResponse(c, http.StatusBadRequest, err.Error())
 		return
 	}
 
 	assets, err := h.service.GetAll(c.Request.Context(), limit, offset)
 	if err != nil {
-		util.HandleError(c, err, "AssetHandler.GetAll")
+		util.HandleError(c, err, log)
 		return
 	}
 
-	slog.Info("assets retrieved", "handler", "AssetHandler.GetAll", "count", len(assets))
+	log.Infow("assets retrieved", "count", len(assets))
 	util.SendResponse(c, http.StatusOK, assets)
 }
 
@@ -150,11 +152,12 @@ func (h *AssetHandler) GetAll(c *gin.Context) {
 // @Router /api/assets/{assetId} [put]
 // @Security CookieAuth
 func (h *AssetHandler) Update(c *gin.Context) {
-	slog.Info("request started", "handler", "AssetHandler.Update", "method", c.Request.Method, "path", c.Request.URL.Path)
+	log := util.FromContext(c.Request.Context()).With("handler", "AssetHandler.Update")
+	log.Infow("request started", "method", c.Request.Method, "path", c.Request.URL.Path)
 
 	id, err := parseIntegerID(c, "assetId")
 	if err != nil {
-		slog.Warn("invalid asset ID", "handler", "AssetHandler.Update", "assetId", c.Param("assetId"))
+		log.Warnw("invalid asset ID", "asset_id", c.Param("assetId"))
 		util.SendErrorResponse(c, http.StatusBadRequest, "invalid asset id")
 		return
 	}
@@ -163,21 +166,21 @@ func (h *AssetHandler) Update(c *gin.Context) {
 	if err := c.ShouldBindJSON(&req); err != nil {
 		var ve validator.ValidationErrors
 		if errors.As(err, &ve) {
-			slog.Warn("validation failed", "handler", "AssetHandler.Update", "error", ve)
+			log.Warnw("validation failed", "error", ve)
 			util.SendErrorResponse(c, http.StatusBadRequest, util.FormatValidationErrors(err))
 			return
 		}
-		slog.Warn("failed to bind request body", "handler", "AssetHandler.Update", "error", err)
+		log.Warnw("failed to bind request body", "error", err)
 		util.SendErrorResponse(c, http.StatusBadRequest, err.Error())
 		return
 	}
 
 	if err := h.service.Update(c.Request.Context(), id, &req); err != nil {
-		util.HandleError(c, err, "AssetHandler.Update")
+		util.HandleError(c, err, log)
 		return
 	}
 
-	slog.Info("asset updated", "handler", "AssetHandler.Update", "assetID", id)
+	log.Infow("asset updated", "asset_id", id)
 	util.SendResponse(c, http.StatusOK, map[string]string{"message": "asset updated successfully"})
 }
 
@@ -194,20 +197,21 @@ func (h *AssetHandler) Update(c *gin.Context) {
 // @Router /api/assets/{assetId} [delete]
 // @Security CookieAuth
 func (h *AssetHandler) Delete(c *gin.Context) {
-	slog.Info("request started", "handler", "AssetHandler.Delete", "method", c.Request.Method, "path", c.Request.URL.Path)
+	log := util.FromContext(c.Request.Context()).With("handler", "AssetHandler.Delete")
+	log.Infow("request started", "method", c.Request.Method, "path", c.Request.URL.Path)
 
 	id, err := parseIntegerID(c, "assetId")
 	if err != nil {
-		slog.Warn("invalid asset ID", "handler", "AssetHandler.Delete", "assetId", c.Param("assetId"))
+		log.Warnw("invalid asset ID", "asset_id", c.Param("assetId"))
 		util.SendErrorResponse(c, http.StatusBadRequest, "invalid asset id")
 		return
 	}
 
 	if err := h.service.Delete(c.Request.Context(), id); err != nil {
-		util.HandleError(c, err, "AssetHandler.Delete")
+		util.HandleError(c, err, log)
 		return
 	}
 
-	slog.Info("asset deleted", "handler", "AssetHandler.Delete", "assetID", id)
+	log.Infow("asset deleted", "asset_id", id)
 	util.SendResponse(c, http.StatusOK, map[string]string{"message": "asset deleted successfully"})
 }

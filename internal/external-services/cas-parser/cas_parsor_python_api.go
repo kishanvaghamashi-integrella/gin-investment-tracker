@@ -6,8 +6,8 @@ import (
 	"encoding/json"
 	"fmt"
 	casparsermodel "gin-investment-tracker/internal/external-services/cas-parser/model"
+	"gin-investment-tracker/internal/util"
 	"io"
-	"log/slog"
 	"mime/multipart"
 	"net/http"
 	"os"
@@ -26,26 +26,26 @@ func (p *CasParserPythonApi) ProcessCasFile(ctx context.Context, file *multipart
 
 	part, err := writer.CreateFormFile("file", file.Filename)
 	if err != nil {
-		slog.Error("Got error while creating file in form", "error", err.Error())
+		util.Logger.Errorw("Got error while creating file in form", "error", err)
 		return nil, err
 	}
 
 	openedFile, err := file.Open()
 	if err != nil {
-		slog.Error("Got error while opening file", "error", err.Error())
+		util.Logger.Errorw("Got error while opening file", "error", err)
 		return nil, err
 	}
 	defer openedFile.Close()
 	if _, err := io.Copy(part, openedFile); err != nil {
-		slog.Error("Got error while copying file contents", "error", err.Error())
+		util.Logger.Errorw("Got error while copying file contents", "error", err)
 		return nil, err
 	}
 	if err := writer.WriteField("password", filePassword); err != nil {
-		slog.Error("Got error while writing password field", "error", err.Error())
+		util.Logger.Errorw("Got error while writing password field", "error", err)
 		return nil, err
 	}
 	if err := writer.Close(); err != nil {
-		slog.Error("Got error while closing multipart writer", "error", err.Error())
+		util.Logger.Errorw("Got error while closing multipart writer", "error", err)
 		return nil, err
 	}
 
@@ -56,7 +56,7 @@ func (p *CasParserPythonApi) ProcessCasFile(ctx context.Context, file *multipart
 
 	req, err := http.NewRequest("POST", parserUrl, &body)
 	if err != nil {
-		slog.Error("Got error while creating request", "error", err.Error())
+		util.Logger.Errorw("Got error while creating request", "error", err)
 		return nil, err
 	}
 
@@ -64,7 +64,7 @@ func (p *CasParserPythonApi) ProcessCasFile(ctx context.Context, file *multipart
 	client := http.Client{Timeout: 15 * time.Second}
 	resp, err := client.Do(req)
 	if err != nil {
-		slog.Error("Got error while seding request", "error", err.Error())
+		util.Logger.Errorw("Got error while seding request", "error", err)
 		return nil, err
 	}
 	defer resp.Body.Close()

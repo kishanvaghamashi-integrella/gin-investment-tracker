@@ -2,7 +2,7 @@ package assetprice
 
 import (
 	"fmt"
-	"log/slog"
+	"gin-investment-tracker/internal/util"
 )
 
 type AssetPriceService struct {
@@ -18,7 +18,7 @@ func NewAssetPriceService(stockFetcher, mfFetcher AssetPriceFetcherInterface) *A
 }
 
 func (s *AssetPriceService) FetchPrice(instrumentType, externalID string) (float64, float64, error) {
-	slog.Info("External API called to fetch latest price")
+	util.Logger.Infow("External API called to fetch latest price", "externalID", externalID)
 	switch instrumentType {
 	case "stock":
 		return s.stockFetcher.FetchPrice(externalID)
