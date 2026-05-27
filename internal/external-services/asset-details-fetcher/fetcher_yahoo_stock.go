@@ -1,4 +1,4 @@
-package assetprice
+package assetpricefetcher
 
 import (
 	"compress/gzip"

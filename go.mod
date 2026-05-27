@@ -5,7 +5,6 @@ go 1.25.7
 require (
 	github.com/gin-gonic/gin v1.12.0
 	github.com/joho/godotenv v1.5.1
-	github.com/kishanvaghamashi-integrella/mf-stock-tracker v0.0.0-20260317103823-45cbb307da77
 	github.com/robfig/cron/v3 v3.0.1
 	github.com/stretchr/testify v1.11.1
 	github.com/swaggo/files v1.0.1

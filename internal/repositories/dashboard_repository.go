@@ -37,7 +37,7 @@ func (r *DashboardRepository) GetDashboardData(ctx context.Context, userID int64
 		&prev,
 		&total,
 	); err != nil {
-		return nil, util.NewInternalError("failed to fetch dashboard data")
+		return nil, util.NewInternalError("failed to fetch dashboard data", err)
 	}
 	dashboardDataDto.CurrentInvestmentValue = &curr
 	dashboardDataDto.PreviousDayInvestmentValue = &prev
@@ -63,7 +63,7 @@ func (r *DashboardRepository) GetDashboardData(ctx context.Context, userID int64
 	`
 	rows1, err := r.db.Query(ctx, query, userID)
 	if err != nil {
-		return nil, util.NewInternalError("failed to fetch dashboard data")
+		return nil, util.NewInternalError("failed to fetch dashboard data", err)
 	}
 
 	var holdings []dto.HoldingResponseDto
@@ -79,14 +79,14 @@ func (r *DashboardRepository) GetDashboardData(ctx context.Context, userID int64
 			&h.CurrentCapital,
 		); err != nil {
 			rows1.Close()
-			return nil, util.NewInternalError("failed to fetch dashboard data")
+			return nil, util.NewInternalError("failed to fetch dashboard data", err)
 		}
 		holdings = append(holdings, h)
 	}
 	rows1.Close()
 
 	if err := rows1.Err(); err != nil {
-		return nil, util.NewInternalError("failed to fetch dashboard data")
+		return nil, util.NewInternalError("failed to fetch dashboard data", err)
 	}
 	dashboardDataDto.TopHoldings = holdings
 
@@ -108,7 +108,7 @@ func (r *DashboardRepository) GetDashboardData(ctx context.Context, userID int64
 	`
 	rows2, err := r.db.Query(ctx, query, userID)
 	if err != nil {
-		return nil, util.NewInternalError("failed to fetch dashboard data")
+		return nil, util.NewInternalError("failed to fetch dashboard data", err)
 	}
 
 	var transactions []dto.TransactionResponseDto
@@ -123,14 +123,14 @@ func (r *DashboardRepository) GetDashboardData(ctx context.Context, userID int64
 			&t.TxnDate,
 		); err != nil {
 			rows2.Close()
-			return nil, util.NewInternalError("failed to fetch dashboard data")
+			return nil, util.NewInternalError("failed to fetch dashboard data", err)
 		}
 		transactions = append(transactions, t)
 	}
 	rows2.Close()
 
 	if err := rows2.Err(); err != nil {
-		return nil, util.NewInternalError("failed to fetch dashboard data")
+		return nil, util.NewInternalError("failed to fetch dashboard data", err)
 	}
 	dashboardDataDto.RecentTransactions = transactions
 

@@ -1,6 +1,7 @@
-package assetprice
+package assetpricefetcher
 
 import (
+	"context"
 	"fmt"
 	"gin-investment-tracker/internal/util"
 )
@@ -17,8 +18,8 @@ func NewAssetPriceService(stockFetcher, mfFetcher AssetPriceFetcherInterface) *A
 	}
 }
 
-func (s *AssetPriceService) FetchPrice(instrumentType, externalID string) (float64, float64, error) {
-	util.Logger.Infow("External API called to fetch latest price", "externalID", externalID)
+func (s *AssetPriceService) FetchAssetPrice(ctx context.Context, instrumentType, externalID string) (float64, float64, error) {
+	util.FromContext(ctx).With("service", "AssetPriceService.FetchAssetPrice").Infow("External API called to fetch latest price", "externalID", externalID)
 	switch instrumentType {
 	case "stock":
 		return s.stockFetcher.FetchPrice(externalID)

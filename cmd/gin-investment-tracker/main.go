@@ -24,14 +24,14 @@ import (
 // @description JWT token stored in an HttpOnly cookie. Set automatically on login.
 
 func main() {
-	util.InitLogger()
-	defer util.SyncLogger()
-
 	if env := godotenv.Load(); env != nil {
 		util.Logger.Errorw("failed to load .env file", "error", env)
 		os.Exit(1)
 		return
 	}
+
+	util.InitLogger()
+	defer util.SyncLogger()
 
 	ctx, cancel := context.WithTimeout(context.Background(), 5*time.Second)
 	defer cancel()

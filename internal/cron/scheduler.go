@@ -2,7 +2,7 @@ package cron
 
 import (
 	"gin-investment-tracker/internal/cron/jobs"
-	assetprice "gin-investment-tracker/internal/external-services/asset-details"
+	assetpricefetcher "gin-investment-tracker/internal/external-services/asset-details-fetcher"
 	repository "gin-investment-tracker/internal/repositories"
 	"gin-investment-tracker/internal/util"
 
@@ -12,10 +12,10 @@ import (
 type CronJobs struct {
 	assetRepo         repository.AssetRepositoryInterface
 	priceDetailRepo   repository.PriceDetailRepositoryInterface
-	assetPriceFetcher *assetprice.AssetPriceService
+	assetPriceFetcher *assetpricefetcher.AssetPriceService
 }
 
-func NewCronJobs(assetRepo repository.AssetRepositoryInterface, priceDetailRepo repository.PriceDetailRepositoryInterface, assetPriceFetcher *assetprice.AssetPriceService) *CronJobs {
+func NewCronJobs(assetRepo repository.AssetRepositoryInterface, priceDetailRepo repository.PriceDetailRepositoryInterface, assetPriceFetcher *assetpricefetcher.AssetPriceService) *CronJobs {
 	return &CronJobs{assetRepo: assetRepo, priceDetailRepo: priceDetailRepo, assetPriceFetcher: assetPriceFetcher}
 }
 

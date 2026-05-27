@@ -3,7 +3,7 @@ package server
 import (
 	"fmt"
 	"gin-investment-tracker/internal/cron"
-	assetprice "gin-investment-tracker/internal/external-services/asset-details"
+	assetpricefetcher "gin-investment-tracker/internal/external-services/asset-details-fetcher"
 	casparser "gin-investment-tracker/internal/external-services/cas-parser"
 	handler "gin-investment-tracker/internal/handlers"
 	middleware "gin-investment-tracker/internal/middlewares"
@@ -21,9 +21,9 @@ import (
 func RegisterRoutes(r *gin.Engine, db *pgxpool.Pool) error {
 	// 3rd party services
 	casParser := casparser.NewCasParserPythonApi()
-	mfPriceFetcher := assetprice.NewMfapiFetcher()
-	stockPriceFetcher := assetprice.NewYahooStockFetcher()
-	assetPriceFetcher := assetprice.NewAssetPriceService(stockPriceFetcher, mfPriceFetcher)
+	mfPriceFetcher := assetpricefetcher.NewMfapiFetcher()
+	stockPriceFetcher := assetpricefetcher.NewYahooStockFetcher()
+	assetPriceFetcher := assetpricefetcher.NewAssetPriceService(stockPriceFetcher, mfPriceFetcher)
 
 	// Repositories
 	userRepository := repository.NewUserRepository(db)
@@ -91,7 +91,7 @@ func isDevelopmentEnvironment() bool {
 
 func CORSMiddleware() gin.HandlerFunc {
 	return func(c *gin.Context) {
-		c.Writer.Header().Set("Access-Control-Allow-Origin", "*")
+		c.Writer.Header().Set("Access-Control-Allow-Origin", "http://localhost:5173")
 		c.Writer.Header().Set("Access-Control-Allow-Credentials", "true")
 		c.Writer.Header().Set("Access-Control-Allow-Headers", "Content-Type, Authorization")
 		c.Writer.Header().Set("Access-Control-Allow-Methods", "GET, POST, PUT, DELETE, OPTIONS")

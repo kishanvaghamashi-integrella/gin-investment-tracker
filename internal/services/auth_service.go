@@ -43,7 +43,7 @@ func (s *AuthService) Login(ctx context.Context, req *dto.LoginRequest) (*dto.Lo
 		if err == pgx.ErrNoRows {
 			return nil, util.NewBadRequestError("invalid email or password")
 		}
-		return nil, util.NewInternalError("failed to process login")
+		return nil, util.NewInternalError("failed to process login", err)
 	}
 
 	if !util.CheckPassword(user.PasswordHash, req.Password) {
@@ -52,7 +52,7 @@ func (s *AuthService) Login(ctx context.Context, req *dto.LoginRequest) (*dto.Lo
 
 	token, err := util.GenerateToken(user.ID, user.Email)
 	if err != nil {
-		return nil, util.NewInternalError("failed to generate token")
+		return nil, util.NewInternalError("failed to generate token", err)
 	}
 
 	return &dto.LoginResponse{
@@ -66,7 +66,7 @@ func (s *AuthService) Login(ctx context.Context, req *dto.LoginRequest) (*dto.Lo
 func (s *AuthService) GoogleLogin(ctx context.Context, userInfo *dto.GoogleUserInfo) (*dto.LoginResponse, error) {
 	user, err := s.repo.GetByGoogleID(ctx, userInfo.Sub)
 	if err != nil {
-		return nil, util.NewInternalError("failed to fetch user")
+		return nil, util.NewInternalError("failed to fetch user", err)
 	}
 
 	if user == nil {
@@ -76,13 +76,13 @@ func (s *AuthService) GoogleLogin(ctx context.Context, userInfo *dto.GoogleUserI
 			GoogleID: &userInfo.Sub,
 		}
 		if err := s.repo.CreateGoogleUser(ctx, user); err != nil {
-			return nil, util.NewInternalError("failed to create user")
+			return nil, util.NewInternalError("failed to create user", err)
 		}
 	}
 
 	token, err := util.GenerateToken(user.ID, user.Email)
 	if err != nil {
-		return nil, util.NewInternalError("failed to generate token")
+		return nil, util.NewInternalError("failed to generate token", err)
 	}
 
 	return &dto.LoginResponse{

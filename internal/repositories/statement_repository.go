@@ -34,7 +34,7 @@ func (r *StatementRepository) ProcessCASStatement(ctx context.Context, cas *casp
 
 	tx, err := r.db.Begin(ctx)
 	if err != nil {
-		return util.NewInternalError("failed to begin transaction")
+		return util.NewInternalError("failed to begin transaction", err)
 	}
 	defer tx.Rollback(ctx)
 
@@ -47,7 +47,7 @@ func (r *StatementRepository) ProcessCASStatement(ctx context.Context, cas *casp
 	}
 
 	if err := tx.Commit(ctx); err != nil {
-		return util.NewInternalError("failed to commit transaction")
+		return util.NewInternalError("failed to commit transaction", err)
 	}
 
 	return nil
@@ -69,7 +69,7 @@ func processScheme(ctx context.Context, tx pgx.Tx, scheme casparsermodel.Scheme,
 		userAssetID, fromDate, toDate,
 	)
 	if err != nil {
-		return util.NewInternalError("failed to delete transactions")
+		return util.NewInternalError("failed to delete transactions", err)
 	}
 
 	for _, txnData := range scheme.Transactions {
@@ -107,7 +107,7 @@ func processScheme(ctx context.Context, tx pgx.Tx, scheme casparsermodel.Scheme,
 			userAssetID, txnType, quantity, price, txnDate, desc,
 		)
 		if err != nil {
-			return util.NewInternalError("failed to insert transaction")
+			return util.NewInternalError("failed to insert transaction", err)
 		}
 	}
 
@@ -121,7 +121,7 @@ func findOrCreateAsset(ctx context.Context, tx pgx.Tx, scheme casparsermodel.Sch
 		return assetID, nil
 	}
 	if !errors.Is(err, pgx.ErrNoRows) {
-		return 0, util.NewInternalError("failed to query asset")
+		return 0, util.NewInternalError("failed to query asset", err)
 	}
 
 	var amcPtr *string
@@ -136,7 +136,7 @@ func findOrCreateAsset(ctx context.Context, tx pgx.Tx, scheme casparsermodel.Sch
 		scheme.ISIN, scheme.Scheme, "mutual_fund", scheme.ISIN, amcPtr, "MF", "INR", scheme.AMFI,
 	).Scan(&assetID)
 	if err != nil {
-		return 0, util.NewInternalError("failed to create asset")
+		return 0, util.NewInternalError("failed to create asset", err)
 	}
 
 	return assetID, nil
@@ -152,7 +152,7 @@ func findOrCreateUserAsset(ctx context.Context, tx pgx.Tx, userID, assetID int64
 		return userAssetID, nil
 	}
 	if !errors.Is(err, pgx.ErrNoRows) {
-		return 0, util.NewInternalError("failed to query user asset")
+		return 0, util.NewInternalError("failed to query user asset", err)
 	}
 
 	err = tx.QueryRow(ctx,
@@ -160,7 +160,7 @@ func findOrCreateUserAsset(ctx context.Context, tx pgx.Tx, userID, assetID int64
 		userID, assetID,
 	).Scan(&userAssetID)
 	if err != nil {
-		return 0, util.NewInternalError("failed to create user asset")
+		return 0, util.NewInternalError("failed to create user asset", err)
 	}
 
 	return userAssetID, nil
@@ -185,7 +185,7 @@ func recalculateHolding(ctx context.Context, tx pgx.Tx, userAssetID int64) error
 		WHERE user_asset_id = $1
 	`, userAssetID).Scan(&totalQty, &avgPrice, &totalInvested)
 	if err != nil {
-		return util.NewInternalError("failed to recalculate holdings")
+		return util.NewInternalError("failed to recalculate holdings", err)
 	}
 
 	_, err = tx.Exec(ctx, `
@@ -198,7 +198,7 @@ func recalculateHolding(ctx context.Context, tx pgx.Tx, userAssetID int64) error
 			    updated_at     = now()
 	`, userAssetID, totalQty, avgPrice, totalInvested)
 	if err != nil {
-		return util.NewInternalError("failed to upsert holding")
+		return util.NewInternalError("failed to upsert holding", err)
 	}
 
 	return nil

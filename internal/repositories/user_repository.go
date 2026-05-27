@@ -50,7 +50,7 @@ func (r *UserRepository) Delete(ctx context.Context, userId int64) error {
 
 	res, err := r.db.Exec(ctx, query, userId, time.Now())
 	if err != nil {
-		return util.NewInternalError("failed to delete user")
+		return util.NewInternalError("failed to delete user", err)
 	}
 
 	if res.RowsAffected() == 0 {
@@ -142,7 +142,7 @@ func (r *UserRepository) ExistsByID(ctx context.Context, id int64) (bool, error)
 
 	var exists bool
 	if err := r.db.QueryRow(ctx, query, id).Scan(&exists); err != nil {
-		return false, util.NewInternalError("failed to check user existence")
+		return false, util.NewInternalError("failed to check user existence", err)
 	}
 
 	return exists, nil

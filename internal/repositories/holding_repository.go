@@ -43,7 +43,7 @@ func (r *HoldingRepository) GetAllByUserID(ctx context.Context, userID int64, li
 
 	rows, err := r.db.Query(ctx, query, userID, limit, offset, "%"+assetNameQuery+"%")
 	if err != nil {
-		return nil, util.NewInternalError("failed to list holdings")
+		return nil, util.NewInternalError("failed to list holdings", err)
 	}
 	defer rows.Close()
 
@@ -51,13 +51,13 @@ func (r *HoldingRepository) GetAllByUserID(ctx context.Context, userID int64, li
 	for rows.Next() {
 		var h dto.HoldingResponseDto
 		if err := rows.Scan(&h.ID, &h.AssetID, &h.AssetName, &h.AssetInstrumentType, &h.Quantity, &h.AveragePrice, &h.CurrentPrice, &h.PrevDayPrice, &h.InvestedCapital); err != nil {
-			return nil, util.NewInternalError("failed to list holdings")
+			return nil, util.NewInternalError("failed to list holdings", err)
 		}
 		holdings = append(holdings, h)
 	}
 
 	if err := rows.Err(); err != nil {
-		return nil, util.NewInternalError("failed to list holdings")
+		return nil, util.NewInternalError("failed to list holdings", err)
 	}
 
 	return holdings, nil
