@@ -6,6 +6,7 @@ import (
 	assetpricefetcher "gin-investment-tracker/internal/external-services/asset-details-fetcher"
 	casparser "gin-investment-tracker/internal/external-services/cas-parser"
 	handler "gin-investment-tracker/internal/handlers"
+	"gin-investment-tracker/internal/metrics"
 	middleware "gin-investment-tracker/internal/middlewares"
 	repository "gin-investment-tracker/internal/repositories"
 	service "gin-investment-tracker/internal/services"
@@ -14,6 +15,7 @@ import (
 
 	"github.com/gin-gonic/gin"
 	"github.com/jackc/pgx/v5/pgxpool"
+	"github.com/prometheus/client_golang/prometheus/promhttp"
 	swaggerFiles "github.com/swaggo/files"
 	ginSwagger "github.com/swaggo/gin-swagger"
 )
@@ -64,8 +66,14 @@ func RegisterRoutes(r *gin.Engine, db *pgxpool.Pool) error {
 		r.GET("/swagger/*any", ginSwagger.WrapHandler(swaggerFiles.Handler))
 	}
 
+	// setting up prometheus
+	metrics.Register()
+
 	r.Use(CORSMiddleware())
+	r.Use(metrics.PrometheusMiddleware())
 	r.Use(middleware.RequestID())
+
+	r.GET("/metrics", gin.WrapH(promhttp.Handler()))
 
 	unprotectedRouter := r.Group("/api")
 	userHandler.SetRoutes(unprotectedRouter)

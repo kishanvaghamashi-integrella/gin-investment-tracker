@@ -50,7 +50,7 @@ func main() {
 		return
 	}
 
-	if err := r.Run(":8080"); err != nil {
+	if err := r.Run(":8000"); err != nil {
 		util.Logger.Errorw("server failed to run", "error", err)
 		os.Exit(1)
 	}
