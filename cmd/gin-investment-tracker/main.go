@@ -43,7 +43,7 @@ func main() {
 		return
 	}
 
-	r := gin.Default()
+	r := gin.New()
 	if err := server.RegisterRoutes(r, dbPool); err != nil {
 		util.Logger.Errorw("failed to register routes", "error", err)
 		os.Exit(1)
