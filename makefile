@@ -8,3 +8,9 @@ install-hooks:
 	cp scripts/hooks/pre-push .git/hooks/pre-push
 	chmod +x .git/hooks/pre-push
 	@echo "Git hooks installed. Tests will run before every push to main."
+
+docker-dev:
+	docker-compose up --build
+
+docker-prod:
+	docker-compose up -f docker-compose.yml -f docker-compose.prod.yml --build

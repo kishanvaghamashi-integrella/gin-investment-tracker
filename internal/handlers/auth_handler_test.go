@@ -23,9 +23,9 @@ func init() {
 	gin.SetMode(gin.TestMode)
 }
 
-// setupRouter wires up the auth handler using SetRoutes, mirroring routes/routes.go.
-// Actual routes: POST /api/auth, POST /api/auth/email/login, POST /api/auth/logout,
-// GET /api/auth/verify (JWT), DELETE /api/auth (JWT).
+// setupRouter wires up the auth handler using SetRoutes.
+// Actual routes: POST /api/auth/email/register, POST /api/auth/email/login,
+// POST /api/auth/logout, GET /api/auth/verify (JWT), DELETE /api/auth (JWT).
 func setupRouter(svc *mocks.MockUserService) *gin.Engine {
 	r := gin.New()
 	h := handler.NewAuthHandler(svc)
@@ -58,7 +58,7 @@ func authCookie(t *testing.T, userID int64, email string) *http.Cookie {
 }
 
 // ─────────────────────────────────────────────
-// POST /api/auth — Create
+// POST /api/auth/email/register — Create
 // ─────────────────────────────────────────────
 
 func TestUserHandler_Create_Success(t *testing.T) {
@@ -71,7 +71,7 @@ func TestUserHandler_Create_Success(t *testing.T) {
 		"email":    "alice@example.com",
 		"password": "secret123",
 	})
-	req := httptest.NewRequest(http.MethodPost, "/api/auth", body)
+	req := httptest.NewRequest(http.MethodPost, "/api/auth/email/register", body)
 	req.Header.Set("Content-Type", "application/json")
 	w := httptest.NewRecorder()
 
@@ -86,7 +86,7 @@ func TestUserHandler_Create_MalformedJSON(t *testing.T) {
 	svc := new(mocks.MockUserService)
 	r := setupRouter(svc)
 
-	req := httptest.NewRequest(http.MethodPost, "/api/auth", bytes.NewBufferString(`{invalid`))
+	req := httptest.NewRequest(http.MethodPost, "/api/auth/email/register", bytes.NewBufferString(`{invalid`))
 	req.Header.Set("Content-Type", "application/json")
 	w := httptest.NewRecorder()
 
@@ -104,7 +104,7 @@ func TestUserHandler_Create_MissingName(t *testing.T) {
 		"email":    "alice@example.com",
 		"password": "secret123",
 	})
-	req := httptest.NewRequest(http.MethodPost, "/api/auth", body)
+	req := httptest.NewRequest(http.MethodPost, "/api/auth/email/register", body)
 	req.Header.Set("Content-Type", "application/json")
 	w := httptest.NewRecorder()
 
@@ -123,7 +123,7 @@ func TestUserHandler_Create_NameTooShort(t *testing.T) {
 		"email":    "alice@example.com",
 		"password": "secret123",
 	})
-	req := httptest.NewRequest(http.MethodPost, "/api/auth", body)
+	req := httptest.NewRequest(http.MethodPost, "/api/auth/email/register", body)
 	req.Header.Set("Content-Type", "application/json")
 	w := httptest.NewRecorder()
 
@@ -141,7 +141,7 @@ func TestUserHandler_Create_MissingEmail(t *testing.T) {
 		"name":     "Alice",
 		"password": "secret123",
 	})
-	req := httptest.NewRequest(http.MethodPost, "/api/auth", body)
+	req := httptest.NewRequest(http.MethodPost, "/api/auth/email/register", body)
 	req.Header.Set("Content-Type", "application/json")
 	w := httptest.NewRecorder()
 
@@ -160,7 +160,7 @@ func TestUserHandler_Create_InvalidEmailFormat(t *testing.T) {
 		"email":    "not-an-email",
 		"password": "secret123",
 	})
-	req := httptest.NewRequest(http.MethodPost, "/api/auth", body)
+	req := httptest.NewRequest(http.MethodPost, "/api/auth/email/register", body)
 	req.Header.Set("Content-Type", "application/json")
 	w := httptest.NewRecorder()
 
@@ -178,7 +178,7 @@ func TestUserHandler_Create_MissingPassword(t *testing.T) {
 		"name":  "Alice",
 		"email": "alice@example.com",
 	})
-	req := httptest.NewRequest(http.MethodPost, "/api/auth", body)
+	req := httptest.NewRequest(http.MethodPost, "/api/auth/email/register", body)
 	req.Header.Set("Content-Type", "application/json")
 	w := httptest.NewRecorder()
 
@@ -197,7 +197,7 @@ func TestUserHandler_Create_PasswordTooShort(t *testing.T) {
 		"email":    "alice@example.com",
 		"password": "abc",
 	})
-	req := httptest.NewRequest(http.MethodPost, "/api/auth", body)
+	req := httptest.NewRequest(http.MethodPost, "/api/auth/email/register", body)
 	req.Header.Set("Content-Type", "application/json")
 	w := httptest.NewRecorder()
 
@@ -217,7 +217,7 @@ func TestUserHandler_Create_ServiceBadRequest(t *testing.T) {
 		"email":    "alice@example.com",
 		"password": "secret123",
 	})
-	req := httptest.NewRequest(http.MethodPost, "/api/auth", body)
+	req := httptest.NewRequest(http.MethodPost, "/api/auth/email/register", body)
 	req.Header.Set("Content-Type", "application/json")
 	w := httptest.NewRecorder()
 
@@ -238,7 +238,7 @@ func TestUserHandler_Create_ServiceInternalError(t *testing.T) {
 		"email":    "alice@example.com",
 		"password": "secret123",
 	})
-	req := httptest.NewRequest(http.MethodPost, "/api/auth", body)
+	req := httptest.NewRequest(http.MethodPost, "/api/auth/email/register", body)
 	req.Header.Set("Content-Type", "application/json")
 	w := httptest.NewRecorder()
 
