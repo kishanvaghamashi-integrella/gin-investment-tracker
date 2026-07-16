@@ -1,0 +1,16 @@
+services:
+  investment-tracker:
+    build:
+      target: prod # use the prod stage from Dockerfile (compiled binary)
+    restart: unless-stopped
+    environment:
+      - GO_ENV=production
+    labels:
+      - traefik.enable=true
+      - traefik.http.routers.investment-tracker.rule=Host(`investment-tracker.localhost`)
+      - traefik.http.routers.investment-tracker.entrypoints=web
+    deploy:
+      resources:
+        limits:
+          cpus: "1"
+          memory: 256M

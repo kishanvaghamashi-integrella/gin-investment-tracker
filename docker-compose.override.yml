@@ -1,0 +1,13 @@
+services:
+  investment-tracker:
+    build:
+      target: dev # use the dev stage from Dockerfile
+    volumes:
+      - .:/app # hot-reload: mount source into container
+      - /app/tmp # exclude compiled tmp dir
+    environment:
+      - GO_ENV=development
+    labels:
+      - traefik.enable=true
+      - traefik.http.routers.investment-tracker.rule=Host(`investment-tracker.localhost`)
+      - traefik.http.routers.investment-tracker.entrypoints=web

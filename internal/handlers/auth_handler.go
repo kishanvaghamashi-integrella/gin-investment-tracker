@@ -44,7 +44,7 @@ func NewAuthHandler(svc service.AuthServiceInterface) *AuthHandler {
 func (h *AuthHandler) SetRoutes(r *gin.RouterGroup) {
 	auth := r.Group("/auth")
 	{
-		auth.POST("", h.Signup)
+		auth.POST("/email/register", h.Signup)
 		auth.POST("/email/login", h.Login)
 		auth.GET("/google/login", h.GoogleLogin)
 		auth.GET("/google/callback", h.GoogleCallback)
@@ -64,7 +64,7 @@ func (h *AuthHandler) SetRoutes(r *gin.RouterGroup) {
 // @Success 200 {object} map[string]string
 // @Failure 400 {object} util.ErrorBody
 // @Failure 500 {object} util.ErrorBody
-// @Router /api/auth [post]
+// @Router /api/auth/email/register [post]
 func (h *AuthHandler) Signup(c *gin.Context) {
 	log := util.FromContext(c.Request.Context()).With("handler", "AuthHandler.Signup")
 	log.Infow("request started", "method", c.Request.Method, "path", c.Request.URL.Path)
@@ -232,21 +232,21 @@ func (h *AuthHandler) GoogleCallback(c *gin.Context) {
 	code := c.Query("code")
 	if code == "" {
 		log.Warnw("missing oauth code")
-		c.Redirect(http.StatusSeeOther, "http://localhost:3000/login")
+		c.Redirect(http.StatusSeeOther, "http://localhost:5173/login")
 		return
 	}
 
 	state := c.Query("state")
 	if !util.ValidateAndConsumeOAuthState(state) {
 		log.Warnw("invalid or expired oauth state")
-		c.Redirect(http.StatusSeeOther, "http://localhost:3000/login")
+		c.Redirect(http.StatusSeeOther, "http://localhost:5173/login")
 		return
 	}
 
 	token, err := h.googleOAuthCfg.Exchange(c.Request.Context(), code)
 	if err != nil {
 		log.Errorw("failed to exchange oauth code", "error", err)
-		c.Redirect(http.StatusSeeOther, "http://localhost:3000/login")
+		c.Redirect(http.StatusSeeOther, "http://localhost:5173/login")
 		return
 	}
 
@@ -254,7 +254,7 @@ func (h *AuthHandler) GoogleCallback(c *gin.Context) {
 	resp, err := client.Get("https://www.googleapis.com/oauth2/v3/userinfo")
 	if err != nil {
 		log.Errorw("failed to fetch user info from google", "error", err)
-		c.Redirect(http.StatusSeeOther, "http://localhost:3000/login")
+		c.Redirect(http.StatusSeeOther, "http://localhost:5173/login")
 		return
 	}
 	if resp.StatusCode < http.StatusOK || resp.StatusCode >= http.StatusMultipleChoices {
@@ -265,7 +265,7 @@ func (h *AuthHandler) GoogleCallback(c *gin.Context) {
 			return
 		}
 		log.Errorw("google userinfo returned non-success status", "status_code", resp.StatusCode, "responseBody", string(body))
-		c.Redirect(http.StatusSeeOther, "http://localhost:3000/login")
+		c.Redirect(http.StatusSeeOther, "http://localhost:5173/login")
 		return
 	}
 
@@ -274,20 +274,20 @@ func (h *AuthHandler) GoogleCallback(c *gin.Context) {
 	body, err := io.ReadAll(resp.Body)
 	if err != nil {
 		log.Errorw("failed to read google userinfo response", "error", err)
-		c.Redirect(http.StatusSeeOther, "http://localhost:3000/login")
+		c.Redirect(http.StatusSeeOther, "http://localhost:5173/login")
 		return
 	}
 
 	var userInfo dto.GoogleUserInfo
 	if err := json.Unmarshal(body, &userInfo); err != nil {
 		log.Errorw("failed to parse google userinfo", "error", err)
-		c.Redirect(http.StatusSeeOther, "http://localhost:3000/login")
+		c.Redirect(http.StatusSeeOther, "http://localhost:5173/login")
 		return
 	}
 
 	if !userInfo.EmailVerified {
 		log.Warnw("google email not verified", "email", userInfo.Email)
-		c.Redirect(http.StatusSeeOther, "http://localhost:3000/login")
+		c.Redirect(http.StatusSeeOther, "http://localhost:5173/login")
 		return
 	}
 
@@ -300,7 +300,7 @@ func (h *AuthHandler) GoogleCallback(c *gin.Context) {
 	setJwtCookie(c, loginResp.Token)
 
 	log.Infow("google login successful", "userID", loginResp.ID)
-	c.Redirect(http.StatusSeeOther, "http://localhost:3000/dashboard")
+	c.Redirect(http.StatusSeeOther, "http://localhost:5173")
 }
 
 // Logout godoc
@@ -313,13 +313,13 @@ func (h *AuthHandler) GoogleCallback(c *gin.Context) {
 func (h *AuthHandler) Logout(c *gin.Context) {
 	log := util.FromContext(c.Request.Context()).With("handler", "AuthHandler.Logout")
 	log.Infow("request started", "method", c.Request.Method, "path", c.Request.URL.Path)
-	c.SetSameSite(http.SameSiteLaxMode)
-	c.SetCookie("jwt_token", "", -1, "/", "", false, true)
+	c.SetSameSite(http.SameSiteNoneMode)
+	c.SetCookie("jwt_token", "", -1, "/", "", true, true)
 	log.Infow("user logged out successfully")
 	util.SendResponse(c, http.StatusOK, map[string]string{"message": "logged out successfully"})
 }
 
 func setJwtCookie(c *gin.Context, token string) {
-	c.SetSameSite(http.SameSiteLaxMode)
-	c.SetCookie("jwt_token", token, 86400, "/", "", false, true)
+	c.SetSameSite(http.SameSiteNoneMode)
+	c.SetCookie("jwt_token", token, 86400, "/", "", true, true)
 }
